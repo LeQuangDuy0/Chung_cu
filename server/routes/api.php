@@ -9,6 +9,12 @@ use App\Http\Controllers\AmenityController;
 use App\Http\Controllers\PostAmenityController;
 use App\Http\Controllers\EnvironmentFeatureController;
 use App\Http\Controllers\PostEnvironmentController;
+use App\Http\Controllers\SavedPostController;
+use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\AppointmentController;
+use App\Http\Controllers\NotificationsController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\ForgotPasswordController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register']);
@@ -30,10 +36,20 @@ Route::get('/categories/{id}/posts', [CategoryController::class, 'getPostsByCate
 Route::get('/amenities', [AmenityController::class, 'index']);
 Route::get('/environment-features', [EnvironmentFeatureController::class, 'index']);
 
+Route::get('/posts/{postId}/reviews', [ReviewController::class, 'index']);
+
+Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetToken']);
+Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
+
 Route::middleware('auth:sanctum')->group(function () {
     // Auth (all)
-    Route::get('/user', [AuthController::class, 'user']);
     Route::post('/logout', [AuthController::class, 'logout']);
+
+    // profile (all)
+    Route::get('user/profile', [UserController::class, 'profile']);
+    Route::put('user/profile', [UserController::class, 'updateProfile']);
+    Route::post('user/profile/avatar', [UserController::class, 'updateAvatar']);
+    Route::put('user/change-password', [UserController::class, 'changePassword']);
 
     // Posts (admin & lessor)
     Route::post('/posts', [PostController::class, 'store']);
@@ -84,6 +100,31 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/posts/{postId}/environment', [PostEnvironmentController::class, 'index']);
     Route::post('/posts/{postId}/environment', [PostEnvironmentController::class, 'attach']);
     Route::delete('/posts/{postId}/environment', [PostEnvironmentController::class, 'detach']);
+
+    // Saved Posts (all)
+    Route::get('/saved-posts', [SavedPostController::class, 'index']);
+    Route::post('/saved-posts/{postId}', [SavedPostController::class, 'save']);
+    Route::delete('/saved-posts/{postId}', [SavedPostController::class, 'unsave']);
+
+    // Reviews (all)
+    Route::post('/posts/{postId}/reviews', [ReviewController::class, 'store']);
+    Route::put('/reviews/{id}', [ReviewController::class, 'update']);
+    Route::delete('/reviews/{id}', [ReviewController::class, 'destroy']);
+
+    // Appointments (admin & lessor/ get all)
+    Route::post('/appointments', [AppointmentController::class, 'store']);
+    Route::patch('/appointments/{id}/accept', [AppointmentController::class, 'accept']);
+    Route::patch('/appointments/{id}/decline', [AppointmentController::class, 'decline']);
+    Route::delete('/appointments/{id}', [AppointmentController::class, 'cancel']);
+    Route::get('/appointments/my', [AppointmentController::class, 'myAppointments']);
+    Route::get('/appointments/owner', [AppointmentController::class, 'ownerAppointments']);
+    Route::get('/appointments/{id}', [AppointmentController::class, 'show']);
+
+    // Notifications (all)
+    Route::get('/notifications', [NotificationsController::class, 'index']);
+    Route::post('/notifications/read/{id}', [NotificationsController::class, 'markAsRead']);
+    Route::post('/notifications/read-all', [NotificationsController::class, 'markAll']);
+    Route::get('/notifications/unread-count', [NotificationsController::class, 'unreadCount']);
 });
 
 
