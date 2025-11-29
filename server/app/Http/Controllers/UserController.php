@@ -17,7 +17,11 @@ class UserController extends Controller
         $this->cloudinary = $cloudinary;
     }
 
-    // GET /api/user/profile  (hoặc /api/user nếu anh map route như vậy)
+    /* ============================================================
+     *  USER THƯỜNG: PROFILE, AVATAR, ĐỔI MẬT KHẨU
+     * ============================================================ */
+
+    // GET /api/user/profile  (hoặc /api/user nếu bạn map route vậy)
     public function profile()
     {
         $user = Auth::user()->load('avatarFile');
@@ -26,7 +30,6 @@ class UserController extends Controller
 
         return response()->json([
             'status' => true,
-            // data rút gọn cho FE cần ít field
             'data'   => [
                 'id'           => $user->id,
                 'name'         => $user->name,
@@ -35,7 +38,7 @@ class UserController extends Controller
                 'role'         => $user->role,
                 'avatar_url'   => $avatar,
             ],
-            // user đầy đủ (có cả accessor avatar_url nếu anh có khai trong model)
+            // thêm cho tiện FE nào cần full
             'user'   => $user,
         ]);
     }
@@ -145,6 +148,80 @@ class UserController extends Controller
         return response()->json([
             'status'  => true,
             'message' => 'Đổi mật khẩu thành công.',
+        ]);
+    }
+
+    /* ============================================================
+     *  ADMIN: QUẢN LÝ USER & CẤP QUYỀN LESSOR
+     * ============================================================ */
+
+    // GET /api/admin/users
+    public function adminIndex()
+    {
+        $admin = Auth::user();
+
+        if (!$admin || $admin->role !== 'admin') {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Chỉ admin mới xem được danh sách người dùng.',
+            ], 403);
+        }
+
+        $users = User::orderBy('created_at', 'desc')->get([
+            'id',
+            'name',
+            'email',
+            'phone_number',
+            'role',
+            'created_at',
+        ]);
+
+        return response()->json([
+            'status' => true,
+            'data'   => $users,
+        ]);
+    }
+
+    // PUT /api/admin/users/{id}/role
+    public function updateRole(Request $request, $id)
+    {
+        $admin = Auth::user();
+
+        if (!$admin || $admin->role !== 'admin') {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Chỉ admin mới được đổi vai trò người dùng.',
+            ], 403);
+        }
+
+        $request->validate([
+            'role' => 'required|in:user,lessor,admin',
+        ]);
+
+        $user = User::find($id);
+
+        if (!$user) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Không tìm thấy người dùng.',
+            ], 404);
+        }
+
+        // Không cho tự hạ quyền chính mình cho đỡ toang
+        if ($user->id === $admin->id && $request->role !== 'admin') {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Không thể thay đổi vai trò của chính bạn.',
+            ], 422);
+        }
+
+        $user->role = $request->role;
+        $user->save();
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Cập nhật vai trò thành công.',
+            'data'    => $user,
         ]);
     }
 }
