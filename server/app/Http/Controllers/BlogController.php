@@ -107,6 +107,7 @@ class BlogController extends Controller
         // Nếu có title → update slug nếu đổi
         if ($request->filled('title') && $post->title !== $request->title) {
             $post->slug = $this->uniqueSlug($request->title);
+
         }
 
         // Update từng field (chỉ field được gửi)

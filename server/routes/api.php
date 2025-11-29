@@ -54,6 +54,7 @@ Route::get('/posts/{postId}/reviews', [ReviewController::class, 'index']);
 Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetToken']);
 Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
 
+
 Route::middleware('auth:sanctum')->group(function () {
     // Auth (all)
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -63,6 +64,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('user/profile', [UserController::class, 'updateProfile']);
     Route::post('user/profile/avatar', [UserController::class, 'updateAvatar']);
     Route::put('user/change-password', [UserController::class, 'changePassword']);
+
+
+    Route::prefix('admin')->group(function () {
+        Route::get('/users', [UserController::class, 'adminIndex']);
+        Route::put('/users/{id}/role', [UserController::class, 'updateRole']);
+    });
 
     // Posts (admin & lessor)
     Route::post('/posts', [PostController::class, 'store']);
