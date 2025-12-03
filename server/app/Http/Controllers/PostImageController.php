@@ -59,7 +59,7 @@ class PostImageController extends Controller
             }
 
             $request->validate([
-                'image' => 'required|image|mimes:jpeg,png,jpg|max:4096',
+                'image' => 'required|image|mimes:jpeg,png,jpg|max:10240',
                 'sort_order' => 'nullable|integer|min:0'
             ]);
 

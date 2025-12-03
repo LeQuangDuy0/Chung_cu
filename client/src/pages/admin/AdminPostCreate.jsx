@@ -140,11 +140,36 @@ export default function AdminPostCreate() {
     )
   }
 
+  // --- Cho phép chọn cộng dồn ảnh ---
   const handleImagesChange = e => {
     const files = Array.from(e.target.files || [])
-    setImages(files)
-    setImagePreviews(files.map(f => URL.createObjectURL(f)))
+    if (files.length === 0) return
+
+    // Tạo preview URL
+    const newPreviews = files.map(f => URL.createObjectURL(f))
+
+    // Cộng dồn vào state cũ
+    setImages(prev => [...prev, ...files])
+    setImagePreviews(prev => [...prev, ...newPreviews])
+    
+    e.target.value = ''
   }
+
+  // --- Xóa ảnh khỏi danh sách chờ upload ---
+  const removeImage = (index) => {
+    setImages(prev => prev.filter((_, i) => i !== index))
+    
+    // Xóa URL preview để tránh leak memory
+    URL.revokeObjectURL(imagePreviews[index])
+    setImagePreviews(prev => prev.filter((_, i) => i !== index))
+  }
+
+  // Cleanup memory khi component unmount
+  useEffect(() => {
+    return () => {
+      imagePreviews.forEach(url => URL.revokeObjectURL(url))
+    }
+  }, [imagePreviews])
 
   // ===== SUBMIT TẠO BÀI =====
   const handleSubmit = async e => {
@@ -203,11 +228,6 @@ export default function AdminPostCreate() {
         fd.append(`environment_features[${index}]`, id)
       })
 
-      // ảnh -> images[0], images[1]...
-      images.forEach((file, index) => {
-        fd.append(`images[${index}]`, file)
-      })
-
       const res = await fetch('/api/posts', {
         method: 'POST',
         headers: {
@@ -243,6 +263,29 @@ export default function AdminPostCreate() {
         }
 
         throw new Error(data.message || 'Không tạo được bài đăng.')
+      }
+
+      const newPostId = data.data.id // Lấy ID bài viết vừa tạo
+
+      // UPLOAD ẢNH (Gửi từng ảnh lên API riêng)
+      if (images.length > 0) {
+        const uploadPromises = images.map((file, index) => {
+          const imgFd = new FormData()
+          // Key đúng theo Controller là 'image' (số ít)
+          imgFd.append('image', file) 
+          imgFd.append('sort_order', index)
+
+          return fetch(`/api/posts/${newPostId}/images`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: 'application/json',
+            },
+            body: imgFd
+          })
+        })
+
+        await Promise.all(uploadPromises)
       }
 
       setSuccess('Tạo bài đăng thành công!')
@@ -520,6 +563,31 @@ export default function AdminPostCreate() {
                       className="admin-upload-preview__item"
                     >
                       <img src={src} alt={`preview-${idx}`} />
+
+                      {/* Nút Xóa Ảnh */}
+                      <button
+                        type="button"
+                        onClick={() => removeImage(idx)}
+                        style={{
+                          position: 'absolute',
+                          top: '-5px',
+                          right: '-5px',
+                          background: 'red',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '50%',
+                          width: '20px',
+                          height: '20px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '12px',
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        ×
+                      </button>
                     </div>
                   ))}
                 </div>
