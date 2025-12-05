@@ -4,7 +4,6 @@ import { useParams, Link } from 'react-router-dom'
 import '../assets/style/pages/post-detail.css'
 
 // DÙNG CHUNG CHO MỌI ẢNH: string, CloudinaryFile, PostImage + file
- 
 function normalizeImageUrl(source) {
   if (!source) return ''
   if (typeof source === 'string') return source
@@ -26,12 +25,12 @@ function normalizeImageUrl(source) {
   return ''
 }
 
-
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api'
 
 export default function PostDetail() {
   const { id } = useParams()
+
   const [post, setPost] = useState(null)
   const [postImages, setPostImages] = useState([]) // ẢNH LẤY TỪ /posts/{id}/images
 
@@ -52,7 +51,7 @@ export default function PostDetail() {
   const [reviewPage, setReviewPage] = useState(1)
   const REVIEWS_PER_PAGE = 3
 
-  // LOAD CHI TIẾT BÀI
+  // ===== LOAD CHI TIẾT BÀI =====
   useEffect(() => {
     async function load() {
       try {
@@ -65,7 +64,14 @@ export default function PostDetail() {
 
         const data = await res.json()
         console.log('POST DETAIL RESPONSE =', data)
-        setPost(data.data || data)
+        const rawPost = data.data || data
+        console.log('POST DETAIL amenities =', rawPost.amenities)
+        setPost(rawPost)
+ 
+console.log('POST DETAIL =', rawPost)
+console.log('POST ID =', rawPost.id)
+console.log('POST amenities =', rawPost.amenities)
+ 
 
         // đổi bài thì quay về page 1 review
         setReviewPage(1)
@@ -80,7 +86,7 @@ export default function PostDetail() {
     load()
   }, [id])
 
-  // LOAD DANH SÁCH ẢNH RIÊNG (API /posts/{id}/images)
+  // ===== LOAD DANH SÁCH ẢNH RIÊNG (API /posts/{id}/images) =====
   useEffect(() => {
     async function loadImages() {
       try {
@@ -102,49 +108,56 @@ export default function PostDetail() {
   }, [id])
 
   // ====== dữ liệu hiển thị mềm dẻo ======
-const mainImage = useMemo(() => {
-  if (!post) return ''
+  const mainImage = useMemo(() => {
+    if (!post) return ''
 
-  // 0. Nếu đã chọn từ gallery thì ưu tiên
-  if (post.cover_image) {
-    const coverUrl = normalizeImageUrl(post.cover_image)
-    if (coverUrl) return coverUrl
-  }
+    // 0. Nếu đã chọn từ gallery thì ưu tiên
+    if (post.cover_image) {
+      const coverUrl = normalizeImageUrl(post.cover_image)
+      if (coverUrl) return coverUrl
+    }
 
-  // 1. Dùng main_image_url backend trả ra
-  if (post.main_image_url) {
-    const mainUrl = normalizeImageUrl(post.main_image_url)
-    if (mainUrl) return mainUrl
-  }
+    // 1. Dùng main_image_url backend trả ra
+    if (post.main_image_url) {
+      const mainUrl = normalizeImageUrl(post.main_image_url)
+      if (mainUrl) return mainUrl
+    }
 
-  // 2. thumbnail_url (đã chuẩn hoá ở BE)
-  if (post.thumbnail_url) {
-    const thumbUrl = normalizeImageUrl(post.thumbnail_url)
-    if (thumbUrl) return thumbUrl
-  }
+    // 2. thumbnail_url (đã chuẩn hoá ở BE)
+    if (post.thumbnail_url) {
+      const thumbUrl = normalizeImageUrl(post.thumbnail_url)
+      if (thumbUrl) return thumbUrl
+    }
 
-  // 3. thumbnail quan hệ
-  if (post.thumbnail) {
-    const thumbUrl = normalizeImageUrl(post.thumbnail)
-    if (thumbUrl) return thumbUrl
-  }
+    // 3. thumbnail quan hệ
+    if (post.thumbnail) {
+      const thumbUrl = normalizeImageUrl(post.thumbnail)
+      if (thumbUrl) return thumbUrl
+    }
 
-  // 4. Ảnh đầu tiên trong quan hệ images
-  if (post.images && post.images.length > 0) {
-    const firstUrl = normalizeImageUrl(post.images[0])
-    if (firstUrl) return firstUrl
-  }
+    // 4. Ảnh đầu tiên trong quan hệ images
+    if (post.images && post.images.length > 0) {
+      const firstUrl = normalizeImageUrl(post.images[0])
+      if (firstUrl) return firstUrl
+    }
 
-  // 5. Fallback sang postImages (API /posts/{id}/images)
-  if (postImages && postImages.length > 0) {
-    const firstUrl = normalizeImageUrl(postImages[0])
-    if (firstUrl) return firstUrl
-  }
+    // 5. Fallback sang postImages (API /posts/{id}/images)
+    if (postImages && postImages.length > 0) {
+      const firstUrl = normalizeImageUrl(postImages[0])
+      if (firstUrl) return firstUrl
+    }
 
-  // 6. Cuối cùng mới dùng placeholder
-  return 'https://via.placeholder.com/1200x600?text=Apartment'
-}, [post, postImages])
+    // 6. THÊM: tự dò field string nào là URL trong object post
+    const anyUrl = Object.values(post).find(
+      (val) =>
+        typeof val === 'string' &&
+        /^https?:\/\//i.test(val) // bắt chuỗi bắt đầu bằng http/https
+    )
+    if (anyUrl) return anyUrl
 
+    // 7. Cuối cùng mới dùng placeholder
+    return 'https://via.placeholder.com/1200x600?text=Apartment'
+  }, [post, postImages])
 
   // LIST ẢNH ĐỂ DÙNG CHO GALLERY (ưu tiên post.images, nếu trống thì dùng postImages)
   const galleryImages = useMemo(() => {
@@ -185,8 +198,27 @@ const mainImage = useMemo(() => {
         ratingList.length
       : post?.reviews_avg || 0
 
+  // Tiện ích trong phòng (lấy trực tiếp từ API /posts/{id})
   const amenities = post?.amenities || []
-  const envFeatures = post?.environment_features || []
+  console.log('DEBUG amenities (from post) =', amenities)
+
+  // Môi trường xung quanh
+  const envFeatures =
+    post?.environment_features ||
+    post?.env_features || // fallback nếu BE đặt tên khác
+    []
+
+  // Đối tượng phù hợp
+  const memberTargets =
+    post?.target_members ||
+    post?.members ||
+    []
+
+  // Chính sách / quy định
+  const policies =
+    post?.rental_policies ||
+    post?.policies ||
+    []
 
   // avatar & phone chủ nhà (từ user của bài đăng)
   const hostAvatarUrl =
@@ -268,26 +300,27 @@ const mainImage = useMemo(() => {
         formData.append('images[]', file)
       })
 
-      const res = await fetch(`${API_BASE_URL}/posts/${id}/reviews`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      })
+const res = await fetch(`${API_BASE_URL}/posts/${id}/reviews`, {
+  method: 'POST',
+  headers: {
+    Authorization: `Bearer ${token}`,
+  },
+  body: formData,
+})
 
-      const text = await res.text()
-      let data
-      try {
-        data = JSON.parse(text)
-      } catch {
-        console.error('RESP TEXT:', text)
-        throw new Error('Máy chủ trả về dữ liệu không hợp lệ.')
-      }
+const text = await res.text()
+let data
+try {
+  data = JSON.parse(text)
+} catch {
+  console.error('RESP TEXT:', text)
+  throw new Error('Máy chủ trả về dữ liệu không hợp lệ.')
+}
 
-      if (!res.ok || data.status === false) {
-        throw new Error(data.message || 'Không gửi được đánh giá.')
-      }
+if (!res.ok || data.status === false) {
+  throw new Error(data.message || 'Không gửi được đánh giá.')
+}
+
 
       const newReview = data.data || data.review || data
 
@@ -342,11 +375,6 @@ const mainImage = useMemo(() => {
 
   return (
     <main className="container container--main pd-page">
-      {/* DEBUG URL ẢNH CHÍNH */}
-      <div style={{ color: 'red', fontSize: 12, marginBottom: 8 }}>
-        mainImage: {mainImage || '(rỗng)'}
-      </div>
-
       {/* HERO ẢNH LỚN */}
       <section className="pd-hero">
         <img
@@ -387,7 +415,10 @@ const mainImage = useMemo(() => {
                   <span className="pd-rating__count">
                     ({ratingCount} đánh giá)
                   </span>
-                  <Link to={`/posts/{post.id}/reviews`} className="pd-link">
+                  <Link
+                    to={`/posts/${post.id}/reviews`}
+                    className="pd-link"
+                  >
                     Xem chi tiết đánh giá
                   </Link>
                 </>
@@ -474,7 +505,7 @@ const mainImage = useMemo(() => {
               </h2>
               <div className="pd-tags">
                 {amenities.map((a) => (
-                  <span key={a.id} className="pd-tag">
+                  <span key={a.id || a.name} className="pd-tag">
                     {a.name}
                   </span>
                 ))}
@@ -486,11 +517,39 @@ const mainImage = useMemo(() => {
           {envFeatures.length > 0 && (
             <article className="pd-card">
               <h2 className="pd-card__title">Môi trường xung quanh</h2>
-              <ul className="pd-env">
+              <div className="pd-tags">
                 {envFeatures.map((e) => (
-                  <li key={e.id}>{e.name}</li>
+                  <span key={e.id || e.name} className="pd-tag">
+                    {e.name}
+                  </span>
                 ))}
-              </ul>
+              </div>
+            </article>
+          )}
+
+          {memberTargets.length > 0 && (
+            <article className="pd-card">
+              <h2 className="pd-card__title">Đối tượng phù hợp</h2>
+              <div className="pd-tags">
+                {memberTargets.map((m) => (
+                  <span key={m.id || m.name} className="pd-tag">
+                    {m.name}
+                  </span>
+                ))}
+              </div>
+            </article>
+          )}
+
+          {policies.length > 0 && (
+            <article className="pd-card">
+              <h2 className="pd-card__title">Chính sách &amp; quy định</h2>
+              <div className="pd-tags">
+                {policies.map((p) => (
+                  <span key={p.id || p.name} className="pd-tag">
+                    {p.name}
+                  </span>
+                ))}
+              </div>
             </article>
           )}
         </div>
@@ -617,7 +676,9 @@ const mainImage = useMemo(() => {
                             alt={rv.user?.name || 'Người dùng'}
                           />
                         ) : (
-                          (rv.user?.name || 'U').charAt(0).toUpperCase()
+                          (rv.user?.name || 'U')
+                            .charAt(0)
+                            .toUpperCase()
                         )}
                       </div>
                       <div>
@@ -664,21 +725,22 @@ const mainImage = useMemo(() => {
           {/* PAGINATION nhỏ 1 2 3 phía dưới */}
           {totalReviewPages > 1 && (
             <div className="pd-reviews__pagination">
-              {Array.from({ length: totalReviewPages }, (_, idx) => idx + 1).map(
-                (pageNum) => (
-                  <button
-                    key={pageNum}
-                    type="button"
-                    className={
-                      'pd-page-btn' +
-                      (pageNum === reviewPage ? ' is-active' : '')
-                    }
-                    onClick={() => setReviewPage(pageNum)}
-                  >
-                    {pageNum}
-                  </button>
-                )
-              )}
+              {Array.from(
+                { length: totalReviewPages },
+                (_, idx) => idx + 1
+              ).map((pageNum) => (
+                <button
+                  key={pageNum}
+                  type="button"
+                  className={
+                    'pd-page-btn' +
+                    (pageNum === reviewPage ? ' is-active' : '')
+                  }
+                  onClick={() => setReviewPage(pageNum)}
+                >
+                  {pageNum}
+                </button>
+              ))}
             </div>
           )}
 

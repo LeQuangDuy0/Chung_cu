@@ -4,6 +4,28 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import '../assets/style/style.css'
 
+// ==== DÙNG CHUNG: Chuẩn hoá mọi kiểu object ảnh thành URL string ====
+function normalizeImageUrl(source) {
+  if (!source) return ''
+  if (typeof source === 'string') return source
+
+  if (source.full_url) return source.full_url
+  if (source.fullUrl) return source.fullUrl
+
+  if (source.url) return source.url
+  if (source.secure_url) return source.secure_url
+
+  if (source.file) {
+    if (source.file.url) return source.file.url
+    if (source.file.secure_url) return source.file.secure_url
+  }
+
+  if (source.image_url) return source.image_url
+  if (source.path) return source.path
+
+  return ''
+}
+
 // ===== CẤU HÌNH API =====
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api'
@@ -183,25 +205,65 @@ export default function ApartmentsExplore() {
         setError('')
 
         const res = await axios.get(
-          `${API_BASE_URL}/categories/${CATEGORY_ID}/posts`
+          `${API_BASE_URL}/categories/${CATEGORY_ID}/posts`,
         )
 
         const posts = res.data.posts || res.data.data || res.data || []
 
-        const mapped = posts.map(p => ({
-          id: p.id,
-          title: p.title,
-          price: Number(p.price) || 0,
-          area: Number(p.area) || 0,
-          addr: p.address || p.full_address || '',
-          img:
-            p.images?.[0]?.url ||
-            'https://via.placeholder.com/400x250?text=No+Image',
-          vip: p.is_vip === 1 || p.vip === 1,
-          time: new Date(p.created_at || Date.now()).toLocaleDateString('vi-VN'),
-          province_id: p.province_id || null,
-          district_id: p.district_id || null,
-        }))
+        const mapped = posts.map(p => {
+          // gom mọi “nguồn ảnh” có thể có trên post
+          const candidates = []
+
+          if (p.cover_image) candidates.push(p.cover_image)
+          if (p.main_image_url) candidates.push(p.main_image_url)
+          if (p.thumbnail_url) candidates.push(p.thumbnail_url)
+          if (p.thumbnail) candidates.push(p.thumbnail)
+
+          if (Array.isArray(p.images) && p.images.length > 0) {
+            candidates.push(p.images[0]) // chỉ lấy ảnh đầu tiên
+          }
+          if (Array.isArray(p.post_images) && p.post_images.length > 0) {
+            candidates.push(p.post_images[0]) // nếu API trả kiểu khác
+          }
+
+          // chọn URL đầu tiên hợp lệ
+          let firstImg = ''
+          for (const c of candidates) {
+            const u = normalizeImageUrl(c)
+            if (u) {
+              firstImg = u
+              break
+            }
+          }
+
+          // fallback: tự quét field string nào là URL http(s)
+          if (!firstImg) {
+            const anyUrl = Object.values(p).find(
+              v => typeof v === 'string' && /^https?:\/\//i.test(v),
+            )
+            if (anyUrl) firstImg = anyUrl
+          }
+
+          // fallback cuối cùng: placeholder
+          if (!firstImg) {
+            firstImg = 'https://via.placeholder.com/400x250?text=No+Image'
+          }
+
+          return {
+            id: p.id,
+            title: p.title,
+            price: Number(p.price) || 0,
+            area: Number(p.area) || 0,
+            addr: p.address || p.full_address || '',
+            img: firstImg,
+            vip: p.is_vip === 1 || p.vip === 1,
+            time: new Date(
+              p.created_at || Date.now(),
+            ).toLocaleDateString('vi-VN'),
+            province_id: p.province_id || null,
+            district_id: p.district_id || null,
+          }
+        })
 
         setRawItems(mapped)
       } catch (e) {
@@ -219,10 +281,10 @@ export default function ApartmentsExplore() {
   const applyFilters = () => {
     // tìm label theo danh sách hiện tại
     const pObj = provinceList.find(
-      p => String(p.id) === String(provinceDraft)
+      p => String(p.id) === String(provinceDraft),
     )
     const dObj = districtList.find(
-      d => String(d.id) === String(districtDraft)
+      d => String(d.id) === String(districtDraft),
     )
 
     setQ(qDraft)
@@ -317,14 +379,11 @@ export default function ApartmentsExplore() {
       setQ(''); setQDraft('')
     }
     if (k === 'province') {
-      setProvince(''); setProvinceDraft('')
-      setProvinceLabel('')
-      setDistrict(''); setDistrictDraft('')
-      setDistrictLabel('')
+      setProvince(''); setProvinceDraft(''); setProvinceLabel('')
+      setDistrict(''); setDistrictDraft(''); setDistrictLabel('')
     }
     if (k === 'district') {
-      setDistrict(''); setDistrictDraft('')
-      setDistrictLabel('')
+      setDistrict(''); setDistrictDraft(''); setDistrictLabel('')
     }
     if (k === 'price') {
       setPrice(''); setPriceDraft('')
@@ -506,38 +565,68 @@ export default function ApartmentsExplore() {
           {error && <p className="re-error">{error}</p>}
 
           <div className="re-grid">
-            {items.map(it => (
-              <article
-                key={it.id}
-                className={'re-card' + (it.vip ? ' is-vip' : '')}
-              >
-                <div className="re-card__media">
-                  <img src={it.img} alt={it.title} />
-                  {it.vip && <span className="re-badge">VIP</span>}
-                </div>
-                <div className="re-card__body">
-                  <h3 className="re-card__title" title={it.title}>
-                    {it.title}
-                  </h3>
-                  <div className="re-card__meta">
-                    <span className="price">
-                      {it.price?.toLocaleString()} ₫/tháng
-                    </span>
-                    <span className="dot">•</span>
-                    <span>{it.area} m²</span>
-                    <span className="dot">•</span>
-                    <span>{it.addr}</span>
-                  </div>
-                  <div className="re-card__foot">
-                    <span className="time">{it.time}</span>
-                    <Link to={`/post/${it.id}`} className="re-btn re-btn--line">
-                      Xem chi tiết
-                    </Link>
-                  </div>
-                </div>
-              </article>
-            ))}
+  {items.map(it => {
+    // ưu tiên amenities, nếu không có thì dùng env_features
+    const amenToShow =
+      (it.amenities && it.amenities.length
+        ? it.amenities
+        : it.env_features || []
+      ).slice(0, 3)
+
+    return (
+      <article
+        key={it.id}
+        className={'re-card' + (it.vip ? ' is-vip' : '')}
+      >
+        <div className="re-card__media">
+          <img src={it.img} alt={it.title} />
+          {it.vip && <span className="re-badge">VIP</span>}
+        </div>
+        <div className="re-card__body">
+          <h3 className="re-card__title" title={it.title}>
+            {it.title}
+          </h3>
+
+          {/* DÒNG GIÁ – DIỆN TÍCH – ĐỊA CHỈ */}
+          <div className="re-card__meta">
+            <span className="price">
+              {it.price?.toLocaleString()} ₫/tháng
+            </span>
+            <span className="dot">•</span>
+            <span>{it.area} m²</span>
+            <span className="dot">•</span>
+            <span>{it.addr}</span>
           </div>
+
+          {/* TIỆN ÍCH NGAY DƯỚI META  */}
+          {amenToShow.length > 0 && (
+            <div className="re-card__amen">
+              {amenToShow.map(a => (
+                <span
+                  key={a.id || a.name}
+                  className="re-card__tag"
+                >
+                  {a.name}
+                </span>
+              ))}
+            </div>
+          )}
+
+          <div className="re-card__foot">
+            <span className="time">{it.time}</span>
+            <Link
+              to={`/post/${it.id}`}
+              className="re-btn re-btn--line"
+            >
+              Xem chi tiết
+            </Link>
+          </div>
+        </div>
+      </article>
+    )
+  })}
+</div>
+
 
           {/* PHÂN TRANG */}
           <nav className="re-paging" aria-label="pagination">
@@ -575,69 +664,6 @@ export default function ApartmentsExplore() {
         <aside className="re-aside">
           <div className="re-filtercard">
             <h3>Bộ lọc nhanh</h3>
-
-            <div className="re-field">
-              <label>Tỉnh/Thành</label>
-              <select
-                value={provinceDraft}
-                onChange={e => {
-                  setProvinceDraft(e.target.value)
-                  setDistrictDraft('')
-                }}
-              >
-                <option value="">Tất cả</option>
-                {provinceList.map(p => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="re-field">
-              <label>Quận/Huyện</label>
-              <select
-                value={districtDraft}
-                onChange={e => setDistrictDraft(e.target.value)}
-                disabled={!provinceDraft}
-              >
-                <option value="">Tất cả</option>
-                {districtList.map(d => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="re-field">
-              <label>Mức giá</label>
-              <select
-                value={priceDraft}
-                onChange={e => setPriceDraft(e.target.value)}
-              >
-                {PRICE.map(o => (
-                  <option key={o.v} value={o.v}>
-                    {o.t}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="re-field">
-              <label>Diện tích</label>
-              <select
-                value={areaDraft}
-                onChange={e => setAreaDraft(e.target.value)}
-              >
-                {AREA.map(o => (
-                  <option key={o.v} value={o.v}>
-                    {o.t}
-                  </option>
-                ))}
-              </select>
-            </div>
-
             <div className="re-field">
               <label>Tiện ích</label>
               <div className="re-checklist">

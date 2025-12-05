@@ -11,7 +11,7 @@ class Post extends Model
     protected $fillable = [
         'user_id', 'category_id', 'title', 'price', 'area', 'address',
         'province_id', 'district_id', 'ward_id', 'lat', 'lng',
-        'content', 'status', 'published_at', 'max_people', 'contact_phone','post_id',
+        'content', 'status', 'published_at', 'max_people', 'contact_phone','post_id','rental_policy','target_member',
     ];
 
     public function user() {
@@ -63,5 +63,14 @@ class Post extends Model
         return $this->morphOne(CloudinaryFile::class, 'model')
                     ->where('type', 'thumbnail');
     }
+    public function targetMembers()
+{
+    return $this->belongsToMany(TargetMember::class, 'post_target_member');
+}
+
+public function rentalPolicies()
+{
+    return $this->belongsToMany(RentalPolicy::class, 'post_rental_policy');
+}
 }
 
