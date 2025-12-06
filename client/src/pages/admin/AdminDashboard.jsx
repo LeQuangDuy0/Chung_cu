@@ -48,7 +48,7 @@ export default function AdminDashboard() {
     total_reviews: 0,
   })
 
-  // ================== LOAD STATS ==================
+  // LOAD STATS 
   useEffect(() => {
     ;(async () => {
       try {
@@ -73,7 +73,7 @@ export default function AdminDashboard() {
     })()
   }, [])
 
-  // ================== LOAD CATEGORIES ==================
+  //  LOAD CATEGORIES 
   useEffect(() => {
     ;(async () => {
       try {
@@ -90,7 +90,7 @@ export default function AdminDashboard() {
     })()
   }, [])
 
-  // ================== LOAD POSTS (bảng posts) ==================
+  //  LOAD POSTS (bảng posts) 
   useEffect(() => {
     ;(async () => {
       try {
@@ -140,7 +140,7 @@ export default function AdminDashboard() {
     })()
   }, [status, categoryId, q, page])
 
-  // ================== REVIEWS SUMMARY (avg stars) ==================
+  //  REVIEWS SUMMARY (avg stars) 
   useEffect(() => {
     ;(async () => {
       try {
@@ -165,7 +165,7 @@ export default function AdminDashboard() {
     setPage(1)
   }
 
-  // ================== CHART DATA ==================
+  //  CHART DATA 
   const barData = useMemo(() => {
     const categories = ['apartment', 'house', 'room']
     const labels = {
@@ -226,7 +226,7 @@ export default function AdminDashboard() {
     }))
   }, [reviewSummary])
 
-  // ================== RENDER ==================
+  //  RENDER 
   return (
     <div className="admin-page">
       {/* HEADER */}
