@@ -366,6 +366,7 @@ export default function AdminDashboard() {
           <p className="admin-stat__value">{stats.total_reviews}</p>
           <p className="admin-stat__hint">Bảng reviews</p>
         </div>
+    
         <div className="admin-stat">
           <p className="admin-stat__label">Bài đã lưu</p>
           <p className="admin-stat__value">{stats.total_saved}</p>

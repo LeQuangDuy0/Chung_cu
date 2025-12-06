@@ -22,6 +22,7 @@ use App\Http\Controllers\BlogTagController;
 use App\Http\Controllers\AdminDashboardController;
 use Illuminate\Support\Facades\Route;
 
+
 // ================== AUTH PUBLIC ==================
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);

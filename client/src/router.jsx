@@ -32,6 +32,8 @@ import AdminLocations from './pages/admin/AdminLocations.jsx'
 import AdminSavedPosts from './pages/admin/AdminSavedPosts.jsx'
 import AdminPostCreate from './pages/admin/AdminPostCreate.jsx'
 import AdminPostEdit from './pages/admin/AdminPostEdit.jsx'
+import AdminBlogList from './pages/admin/AdminBlogList'
+import AdminBlogCreate from './pages/admin/AdminBlogCreate'
 // Layout cho trang người dùng (có Header + Footer)
 function Layout() {
   return (
@@ -83,6 +85,9 @@ export const router = createBrowserRouter([
       { path: 'locations', element: <AdminLocations /> },
       { path: 'reviews', element: <AdminReviews /> },
       { path: 'saved-posts', element: <AdminSavedPosts /> },
+      { path: 'blog-list', element: <AdminBlogList/> },
+      { path: 'blog-list/create', element: <AdminBlogCreate/>
+      }
     ],
   },
 ])
