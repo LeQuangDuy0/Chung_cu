@@ -97,8 +97,47 @@ class AmenityController extends Controller
             return response()->json(['status' => false, 'message' => 'Không tìm thấy tiện ích.'], 404);
         }
 
+        // Detach khỏi bảng trung gian trước khi xóa
+        $amenity->posts()->detach();
         $amenity->delete();
 
         return response()->json(['status' => true, 'message' => 'Xóa tiện ích thành công.']);
+    }
+
+    // GET /api/admin/amenities (admin - lấy danh sách với posts_count và tìm kiếm)
+    public function adminIndex(Request $request)
+    {
+        if (Auth::user()->role !== 'admin') {
+            return response()->json(['status' => false, 'message' => 'Chỉ admin mới được truy cập.'], 403);
+        }
+
+        try {
+            $q = $request->query('q', '');
+
+            $query = Amenity::withCount('posts');
+
+            if ($q) {
+                $query->where(function($qry) use ($q) {
+                    $qry->where('name', 'like', "%{$q}%")
+                        ->orWhere('slug', 'like', "%{$q}%");
+                });
+            }
+
+            $amenities = $query->orderBy('name')->get();
+
+            return response()->json([
+                'data' => $amenities->map(function($amenity) {
+                    return [
+                        'id' => $amenity->id,
+                        'slug' => $amenity->slug,
+                        'name' => $amenity->name,
+                        'posts_count' => $amenity->posts_count ?? 0
+                    ];
+                })
+            ], 200);
+        } catch (Exception $e) {
+            Log::error('Lỗi lấy danh sách tiện ích admin: ' . $e->getMessage());
+            return response()->json(['status' => false, 'message' => 'Không thể lấy danh sách tiện ích.'], 500);
+        }
     }
 }

@@ -23,13 +23,9 @@ import ResetPassword from './pages/ResetPassword.jsx'
 import AdminLayout from './pages/admin/AdminLayout.jsx'
 import AdminDashboard from './pages/admin/AdminDashboard.jsx'
 import AdminPosts from './pages/admin/AdminPosts.jsx'
-import AdminUsers from './pages/admin/AdminUsers.jsx'
 import AdminReviews from './pages/admin/AdminReviews.jsx'
 import AdminCategories from './pages/admin/AdminCategories.jsx'
 import AdminAmenities from './pages/admin/AdminAmenities.jsx'
-import AdminEnvironmentFeatures from './pages/admin/AdminEnvironmentFeatures.jsx'
-import AdminLocations from './pages/admin/AdminLocations.jsx'
-import AdminSavedPosts from './pages/admin/AdminSavedPosts.jsx'
 import AdminPostCreate from './pages/admin/AdminPostCreate.jsx'
 import AdminPostEdit from './pages/admin/AdminPostEdit.jsx'
 // Layout cho trang người dùng (có Header + Footer)
@@ -74,15 +70,11 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <AdminDashboard /> },
       { path: 'posts', element: <AdminPosts /> },
-      {path: 'posts/create', element: <AdminPostCreate/>},
-       { path: 'posts/:id/edit', element: <AdminPostEdit /> },
-      { path: 'users', element: <AdminUsers /> },
+      { path: 'posts/create', element: <AdminPostCreate /> },
+      { path: 'posts/:id/edit', element: <AdminPostEdit /> },
       { path: 'categories', element: <AdminCategories /> },
       { path: 'amenities', element: <AdminAmenities /> },
-      {path: 'environment-features', element: <AdminEnvironmentFeatures />},
-      { path: 'locations', element: <AdminLocations /> },
       { path: 'reviews', element: <AdminReviews /> },
-      { path: 'saved-posts', element: <AdminSavedPosts /> },
     ],
   },
 ])

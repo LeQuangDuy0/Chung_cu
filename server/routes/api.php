@@ -7,9 +7,6 @@ use App\Http\Controllers\PostImageController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\AmenityController;
 use App\Http\Controllers\PostAmenityController;
-use App\Http\Controllers\EnvironmentFeatureController;
-use App\Http\Controllers\PostEnvironmentController;
-use App\Http\Controllers\SavedPostController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\NotificationsController;
@@ -47,7 +44,6 @@ Route::get('/categories/{id}', [CategoryController::class, 'show']);
 Route::get('/categories/{id}/posts', [CategoryController::class, 'getPostsByCategory']);
 
 Route::get('/amenities', [AmenityController::class, 'index']);
-Route::get('/environment-features', [EnvironmentFeatureController::class, 'index']);
 
 Route::get('/posts/{postId}/reviews', [ReviewController::class, 'index']);
 
@@ -65,12 +61,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('user/profile/avatar', [UserController::class, 'updateAvatar']);
     Route::put('user/change-password', [UserController::class, 'changePassword']);
 
-
-    Route::prefix('admin')->group(function () {
-        Route::get('/users', [UserController::class, 'adminIndex']);
-        Route::put('/users/{id}/role', [UserController::class, 'updateRole']);
-    });
-
     // Posts (admin & lessor)
     Route::post('/posts', [PostController::class, 'store']);
     Route::put('/posts/{id}', [PostController::class, 'update']);
@@ -81,21 +71,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/posts/{postId}/images', [PostImageController::class, 'store']);
     Route::put('/posts/images/{id}', [PostImageController::class, 'update']);
     Route::delete('/posts/images/{id}', [PostImageController::class, 'destroy']);
-
-    // Province (admin)
-    Route::post('/provinces', [LocationController::class, 'createProvince']);
-    Route::put('/provinces/{id}', [LocationController::class, 'updateProvince']);
-    Route::delete('/provinces/{id}', [LocationController::class, 'deleteProvince']);
-
-    // District (admin)
-    Route::post('/districts', [LocationController::class, 'createDistrict']);
-    Route::put('/districts/{id}', [LocationController::class, 'updateDistrict']);
-    Route::delete('/districts/{id}', [LocationController::class, 'deleteDistrict']);
-
-    // Ward (admin)
-    Route::post('/wards', [LocationController::class, 'createWard']);
-    Route::put('/wards/{id}', [LocationController::class, 'updateWard']);
-    Route::delete('/wards/{id}', [LocationController::class, 'deleteWard']);
 
     // Categories (admin)
     Route::post('/categories', [CategoryController::class, 'store']);
@@ -112,28 +87,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/posts/{postId}/amenities', [PostAmenityController::class, 'attach']);
     Route::delete('/posts/{postId}/amenities', [PostAmenityController::class, 'detach']);
 
-    // EnvironmentFeatures (admin)
-    Route::post('/environment-features', [EnvironmentFeatureController::class, 'store']);
-    Route::put('/environment-features/{id}', [EnvironmentFeatureController::class, 'update']);
-    Route::delete('/environment-features/{id}', [EnvironmentFeatureController::class, 'destroy']);
-
-    // EnvironmentFeatures - Gắn đặc điểm môi trường (admin & lessor/ get all)
-    Route::get('/posts/{postId}/environment', [PostEnvironmentController::class, 'index']);
-    Route::post('/posts/{postId}/environment', [PostEnvironmentController::class, 'attach']);
-    Route::delete('/posts/{postId}/environment', [PostEnvironmentController::class, 'detach']);
-
-    // Saved Posts (all)
-    Route::get('/saved-posts', [SavedPostController::class, 'index']);
-    Route::post('/saved-posts/{postId}', [SavedPostController::class, 'save']);
-    Route::delete('/saved-posts/{postId}', [SavedPostController::class, 'unsave']);
-
     // Reviews (all)
-  Route::get('/reviews', [ReviewController::class, 'all'])
-    ->withoutMiddleware('auth:sanctum');
+    Route::get('/reviews', [ReviewController::class, 'all'])
+        ->withoutMiddleware('auth:sanctum');
 
-Route::get('/posts/{post}/reviews', [ReviewController::class, 'index'])
-    ->withoutMiddleware('auth:sanctum');
+    Route::get('/posts/{post}/reviews', [ReviewController::class, 'index'])
+        ->withoutMiddleware('auth:sanctum');
+
+    Route::get('/admin/reviews', [ReviewController::class, 'adminIndex']);
+
     Route::middleware('auth:sanctum')->group(function () {
+        // Admin categories & amenities (cần auth)
+        Route::get('/admin/categories', [CategoryController::class, 'adminIndex']);
+        Route::get('/admin/amenities', [AmenityController::class, 'adminIndex']);
         Route::post('/posts/{post}/reviews', [ReviewController::class, 'store']);
         Route::put('/reviews/{id}', [ReviewController::class, 'update']);
         Route::delete('/reviews/{id}', [ReviewController::class, 'destroy']);

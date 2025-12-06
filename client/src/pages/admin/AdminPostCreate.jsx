@@ -8,7 +8,6 @@ export default function AdminPostCreate() {
   // ===== OPTIONS TỪ BACKEND =====
   const [categories, setCategories] = useState([])
   const [amenities, setAmenities] = useState([])
-  const [envFeatures, setEnvFeatures] = useState([])
   const [provinces, setProvinces] = useState([])
   const [districts, setDistricts] = useState([])
   const [wards, setWards] = useState([])
@@ -28,7 +27,6 @@ export default function AdminPostCreate() {
   })
 
   const [selectedAmenities, setSelectedAmenities] = useState([])      // [id,...]
-  const [selectedEnvFeatures, setSelectedEnvFeatures] = useState([]) // [id,...]
 
   const [images, setImages] = useState([])              // File[]
   const [imagePreviews, setImagePreviews] = useState([]) // URL[]
@@ -45,23 +43,20 @@ export default function AdminPostCreate() {
         setLoading(true)
         setError('')
 
-        const [catRes, ameRes, envRes, provRes] = await Promise.all([
+        const [catRes, ameRes, provRes] = await Promise.all([
           fetch('/api/categories'),
           fetch('/api/amenities'),
-          fetch('/api/environment-features'),
           fetch('/api/provinces'),
         ])
 
-        const [catJson, ameJson, envJson, provJson] = await Promise.all([
+        const [catJson, ameJson, provJson] = await Promise.all([
           catRes.json(),
           ameRes.json(),
-          envRes.json(),
           provRes.json(),
         ])
 
         setCategories(catJson.data || catJson || [])
         setAmenities(ameJson.data || ameJson || [])
-        setEnvFeatures(envJson.data || envJson || [])
         setProvinces(provJson.data || provJson || [])
       } catch (err) {
         console.error(err)
@@ -134,11 +129,6 @@ export default function AdminPostCreate() {
     )
   }
 
-  const toggleEnvFeature = id => {
-    setSelectedEnvFeatures(prev =>
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-    )
-  }
 
   // --- Cho phép chọn cộng dồn ảnh ---
   const handleImagesChange = e => {
@@ -223,11 +213,6 @@ export default function AdminPostCreate() {
         fd.append(`amenities[${index}]`, id)
       })
 
-      // mảng environment_features -> environment_features[0]...
-      selectedEnvFeatures.forEach((id, index) => {
-        fd.append(`environment_features[${index}]`, id)
-      })
-
       const res = await fetch('/api/posts', {
         method: 'POST',
         headers: {
@@ -308,7 +293,7 @@ export default function AdminPostCreate() {
           <p className="admin-page__desc">
             Tạo bản ghi mới cho bảng <code>posts</code> và liên kết tới{' '}
             <code>post_images</code>, <code>amenity_post</code>,{' '}
-            <code>environment_post</code>, địa lý{' '}
+địa lý{' '}
             <code>provinces/districts/wards</code>.
           </p>
         </div>
@@ -510,31 +495,6 @@ export default function AdminPostCreate() {
                 {amenities.length === 0 && (
                   <p className="admin-note">
                     Chưa có tiện ích nào, hãy thêm ở mục Tiện ích.
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* MÔI TRƯỜNG XUNG QUANH */}
-          <div className="admin-form__row">
-            <div className="admin-form__col">
-              <h3 className="admin-subtitle">Môi trường xung quanh</h3>
-              <div className="admin-chip-list">
-                {envFeatures.map(e => (
-                  <label key={e.id} className="admin-chip-input">
-                    <input
-                      type="checkbox"
-                      checked={selectedEnvFeatures.includes(e.id)}
-                      onChange={() => toggleEnvFeature(e.id)}
-                    />
-                    <span>{e.name}</span>
-                  </label>
-                ))}
-                {envFeatures.length === 0 && (
-                  <p className="admin-note">
-                    Chưa có yếu tố môi trường nào, hãy thêm ở mục Môi trường
-                    xung quanh.
                   </p>
                 )}
               </div>

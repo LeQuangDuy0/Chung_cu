@@ -138,4 +138,42 @@ class CategoryController extends Controller
             ], 500);
         }
     }
+
+    // GET /api/admin/categories (admin - lấy danh sách với posts_count và tìm kiếm)
+    public function adminIndex(Request $request)
+    {
+        $user = Auth::user();
+        if ($user->role !== 'admin') {
+            return response()->json(['status' => false, 'message' => 'Chỉ admin mới được truy cập.'], 403);
+        }
+
+        try {
+            $q = $request->query('q', '');
+
+            $query = Category::withCount('posts');
+
+            if ($q) {
+                $query->where(function($qry) use ($q) {
+                    $qry->where('name', 'like', "%{$q}%")
+                        ->orWhere('slug', 'like', "%{$q}%");
+                });
+            }
+
+            $categories = $query->orderBy('name')->get();
+
+            return response()->json([
+                'data' => $categories->map(function($cat) {
+                    return [
+                        'id' => $cat->id,
+                        'slug' => $cat->slug,
+                        'name' => $cat->name,
+                        'posts_count' => $cat->posts_count ?? 0
+                    ];
+                })
+            ], 200);
+        } catch (Exception $e) {
+            Log::error('Lỗi lấy danh sách danh mục admin: ' . $e->getMessage());
+            return response()->json(['status' => false, 'message' => 'Không thể lấy danh sách danh mục.'], 500);
+        }
+    }
 }

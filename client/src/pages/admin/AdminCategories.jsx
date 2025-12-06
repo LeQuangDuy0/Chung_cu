@@ -7,6 +7,11 @@ export default function AdminCategories() {
   const [q, setQ] = useState('')               // từ khoá tìm kiếm
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showModal, setShowModal] = useState(false)  // hiển thị modal
+  const [editingItem, setEditingItem] = useState(null)  // item đang sửa (null = thêm mới)
+  const [formData, setFormData] = useState({ name: '', slug: '' })
+  const [formLoading, setFormLoading] = useState(false)
+  const [formError, setFormError] = useState('')
 
   // ===== LOAD DANH MỤC TỪ API =====
   useEffect(() => {
@@ -34,9 +39,16 @@ export default function AdminCategories() {
          *   }
          * hoặc trả mảng [] trực tiếp cũng được.
          */
+        const token = localStorage.getItem('access_token')
         const res = await fetch(
           `/api/admin/categories?${params.toString()}`,
-          { signal: controller.signal },
+          {
+            signal: controller.signal,
+            headers: {
+              Accept: 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+          },
         )
 
         const text = await res.text()
@@ -67,6 +79,86 @@ export default function AdminCategories() {
     return () => controller.abort()
   }, [q])
 
+  // ===== MỞ MODAL THÊM/SỬA =====
+  const handleOpenModal = (item = null) => {
+    setEditingItem(item)
+    setFormData({
+      name: item?.name || '',
+      slug: item?.slug || '',
+    })
+    setFormError('')
+    setShowModal(true)
+  }
+
+  // ===== ĐÓNG MODAL =====
+  const handleCloseModal = () => {
+    setShowModal(false)
+    setEditingItem(null)
+    setFormData({ name: '', slug: '' })
+    setFormError('')
+  }
+
+  // ===== XỬ LÝ THAY ĐỔI FORM =====
+  const handleFormChange = (e) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  // ===== TẠO/SỬA DANH MỤC =====
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setFormError('')
+    setFormLoading(true)
+
+    try {
+      const token = localStorage.getItem('access_token')
+      if (!token) {
+        throw new Error('Bạn chưa đăng nhập.')
+      }
+
+      const url = editingItem
+        ? `/api/categories/${editingItem.id}`
+        : '/api/categories'
+      const method = editingItem ? 'PUT' : 'POST'
+
+      const res = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          slug: formData.slug || undefined,
+        }),
+      })
+
+      const text = await res.text()
+      let json = {}
+      try {
+        json = text ? JSON.parse(text) : {}
+      } catch {
+        throw new Error('Response không phải JSON hợp lệ.')
+      }
+
+      if (!res.ok) {
+        throw new Error(json?.message || 'Có lỗi khi lưu danh mục')
+      }
+
+      // Đóng modal và reload danh sách
+      handleCloseModal()
+      // Trigger reload bằng cách thay đổi q
+      setQ((prev) => prev + ' ')
+      setTimeout(() => setQ((prev) => prev.trim()), 100)
+    } catch (err) {
+      console.error(err)
+      setFormError(err.message || 'Có lỗi khi lưu danh mục')
+    } finally {
+      setFormLoading(false)
+    }
+  }
+
   // ===== XOÁ 1 DANH MỤC =====
   const handleDelete = async (id) => {
     if (!window.confirm(`Bạn chắc chắn muốn xoá danh mục #${id}?`)) return
@@ -78,9 +170,19 @@ export default function AdminCategories() {
        * Gợi ý Laravel:
        *   Route::delete('/admin/categories/{category}', ...);
        */
-      const res = await fetch(`/api/admin/categories/${id}`, {
+      const token = localStorage.getItem('access_token')
+      if (!token) {
+        alert('Bạn chưa đăng nhập.')
+        return
+      }
+
+      const res = await fetch(`/api/categories/${id}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
       })
 
       const text = await res.text()
@@ -114,11 +216,10 @@ export default function AdminCategories() {
           </p>
         </div>
 
-        {/* TODO: sau này mở modal / chuyển trang tạo mới */}
         <button
           type="button"
           className="admin-btn admin-btn--primary"
-          onClick={() => alert('TODO: mở form tạo category mới')}
+          onClick={() => handleOpenModal()}
         >
           + Thêm danh mục
         </button>
@@ -173,13 +274,10 @@ export default function AdminCategories() {
                   <td>{cat.name}</td>
                   <td>{cat.posts_count ?? 0}</td>
                   <td className="admin-td-actions">
-                    {/* TODO: thay alert bằng form sửa */}
                     <button
                       type="button"
                       className="admin-chip admin-chip--ghost"
-                      onClick={() =>
-                        alert(`TODO: mở form sửa category #${cat.id}`)
-                      }
+                      onClick={() => handleOpenModal(cat)}
                     >
                       Sửa
                     </button>
@@ -197,6 +295,89 @@ export default function AdminCategories() {
           </table>
         </div>
       </div>
+
+      {/* MODAL THÊM/SỬA DANH MỤC */}
+      {showModal && (
+        <div
+          className="admin-modal-overlay"
+          onClick={(e) => {
+            if (e.target.classList.contains('admin-modal-overlay')) {
+              handleCloseModal()
+            }
+          }}
+        >
+          <div className="admin-modal">
+            <div className="admin-modal__header">
+              <h3>{editingItem ? 'Sửa danh mục' : 'Thêm danh mục mới'}</h3>
+              <button
+                type="button"
+                className="admin-modal__close"
+                onClick={handleCloseModal}
+              >
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="admin-modal__body">
+              {formError && (
+                <p className="admin-error" style={{ marginBottom: '1rem' }}>
+                  {formError}
+                </p>
+              )}
+
+              <div className="admin-field">
+                <label className="admin-label">
+                  Tên danh mục <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  className="admin-input"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleFormChange}
+                  placeholder="Ví dụ: Phòng trọ"
+                  required
+                  disabled={formLoading}
+                />
+              </div>
+
+              <div className="admin-field">
+                <label className="admin-label">Slug (tùy chọn)</label>
+                <input
+                  type="text"
+                  className="admin-input"
+                  name="slug"
+                  value={formData.slug}
+                  onChange={handleFormChange}
+                  placeholder="Ví dụ: phong-tro (để trống sẽ tự tạo từ tên)"
+                  disabled={formLoading}
+                />
+                <small style={{ color: '#94a3b8', fontSize: '0.875rem' }}>
+                  Slug sẽ được tự động tạo từ tên nếu để trống
+                </small>
+              </div>
+
+              <div className="admin-modal__footer">
+                <button
+                  type="button"
+                  className="admin-btn admin-btn--ghost"
+                  onClick={handleCloseModal}
+                  disabled={formLoading}
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="admin-btn admin-btn--primary"
+                  disabled={formLoading}
+                >
+                  {formLoading ? 'Đang lưu...' : editingItem ? 'Cập nhật' : 'Thêm mới'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </section>
   )
 }

@@ -12,9 +12,14 @@ export default function AdminReviews() {
         setLoading(true)
         setError('')
         const res = await fetch('/api/admin/reviews')
-        if (!res.ok) throw new Error('Không tải được danh sách đánh giá')
-        const data = await res.json()
-        setItems(data.data || data)
+
+        const data = await res.json().catch(() => null)
+        if (!res.ok) {
+          const msg = data?.message || 'Không tải được danh sách đánh giá'
+          throw new Error(msg)
+        }
+
+        setItems(data?.data || data || [])
       } catch (err) {
         setError(err.message || 'Có lỗi xảy ra')
       } finally {
@@ -27,6 +32,10 @@ export default function AdminReviews() {
   return (
     <div>
       <h2>Quản lý đánh giá</h2>
+      <p style={{ marginTop: 4, opacity: 0.8 }}>
+        Chỉ người cho thuê (lessor) xem được đánh giá mà người thuê viết cho các
+        bài đăng của bạn.
+      </p>
       {loading && <p>Đang tải...</p>}
       {error && <p style={{ color: '#fecaca' }}>{error}</p>}
 
@@ -46,7 +55,15 @@ export default function AdminReviews() {
             {items.map((r) => (
               <tr key={r.id}>
                 <td>{r.id}</td>
-                <td>#{r.post_id}</td>
+                <td>
+                  {r.post?.title ? (
+                    <>
+                      {r.post.title} <span style={{ opacity: 0.7 }}>#{r.post.id}</span>
+                    </>
+                  ) : (
+                    <>#{r.post_id}</>
+                  )}
+                </td>
                 <td>{r.user?.name || r.user_id}</td>
                 <td>{r.rating}/5</td>
                 <td>{r.content}</td>

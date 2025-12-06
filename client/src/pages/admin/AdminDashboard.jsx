@@ -1,5 +1,5 @@
 // src/pages/admin/AdminDashboard.jsx
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import '@/assets/style/pages/admin.css'
 
@@ -24,12 +24,10 @@ function normalizeErrorMessage(err) {
 
 export default function AdminDashboard() {
   // --- SỐ LIỆU TỔNG QUAN (stats) ---
-  // map với các bảng: posts, users, reviews, saved_posts
+  // map với các bảng: posts, reviews
   const [stats, setStats] = useState({
     total_posts: 0,
-    total_users: 0,
     total_reviews: 0,
-    total_saved: 0,
   })
 
   // --- DANH SÁCH BÀI ĐĂNG (bảng posts) ---
@@ -44,6 +42,11 @@ export default function AdminDashboard() {
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [reviewSummary, setReviewSummary] = useState({
+    average_rating: 0,
+    ratings_count: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+    total_reviews: 0,
+  })
 
   // ================== LOAD STATS ==================
   useEffect(() => {
@@ -137,34 +140,23 @@ export default function AdminDashboard() {
     })()
   }, [status, categoryId, q, page])
 
-  // ================== ĐỔI TRẠNG THÁI BÀI ĐĂNG ==================
-  const handleToggleStatus = async (postId, currentStatus) => {
-    const next = currentStatus === 'published' ? 'hidden' : 'published'
-    if (!window.confirm(`Chuyển trạng thái bài #${postId} sang "${next}"?`)) return
-
-    try {
-      // API: PATCH /api/admin/posts/{id}/status
-      // body: { status: "published" | "hidden" | ... }
-      const res = await fetch(`/api/admin/posts/${postId}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: next }),
-      })
-
-      const data = await safeJson(res)
-
-      if (!res.ok) {
-        throw new Error(data?.message || 'Không cập nhật được trạng thái')
+  // ================== REVIEWS SUMMARY (avg stars) ==================
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const res = await fetch('/api/reviews?per_page=1')
+        const data = await safeJson(res)
+        if (!res.ok || data?.status === false) return
+        setReviewSummary({
+          average_rating: data?.average_rating || 0,
+          ratings_count: data?.ratings_count || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+          total_reviews: data?.total_reviews || 0,
+        })
+      } catch (err) {
+        console.error('Lỗi load reviews summary:', err)
       }
-
-      setPosts(prev =>
-        prev.map(p => (p.id === postId ? { ...p, status: next } : p)),
-      )
-    } catch (err) {
-      console.error('Lỗi đổi trạng thái:', err)
-      alert(err.message || 'Có lỗi khi cập nhật trạng thái')
-    }
-  }
+    })()
+  }, [])
 
   const resetFilters = () => {
     setStatus('all')
@@ -172,6 +164,67 @@ export default function AdminDashboard() {
     setQ('')
     setPage(1)
   }
+
+  // ================== CHART DATA ==================
+  const barData = useMemo(() => {
+    const categories = ['apartment', 'house', 'room']
+    const labels = {
+      apartment: 'Căn hộ',
+      house: 'Nhà nguyên căn',
+      room: 'Phòng trọ',
+    }
+    const result = {
+      apartment: { published: 0, pending: 0, draft: 0 },
+      house: { published: 0, pending: 0, draft: 0 },
+      room: { published: 0, pending: 0, draft: 0 },
+    }
+
+    posts.forEach(p => {
+      const name = p.category?.name?.toLowerCase?.() || ''
+      const status = (p.status || '').toLowerCase()
+      let key = 'room'
+      if (name.includes('căn hộ') || name.includes('apartment') || name.includes('chung cư')) {
+        key = 'apartment'
+      } else if (name.includes('nhà')) {
+        key = 'house'
+      }
+
+      if (status === 'published') result[key].published += 1
+      else if (status === 'pending') result[key].pending += 1
+      else result[key].draft += 1
+    })
+
+    const series = categories.map(key => {
+      const totals = result[key]
+      const total = totals.published + totals.pending + totals.draft
+      return {
+        key,
+        label: labels[key],
+        total,
+        breakdown: [
+          { status: 'published', label: 'Đang cho thuê', value: totals.published, color: 'var(--chart-green, #34d399)' },
+          { status: 'pending', label: 'Chờ duyệt', value: totals.pending, color: 'var(--chart-amber, #fbbf24)' },
+          { status: 'draft', label: 'Còn trống', value: totals.draft, color: 'var(--chart-slate, #94a3b8)' },
+        ],
+      }
+    })
+
+    const max = Math.max(
+      ...series.flatMap(s => s.breakdown.map(b => b.value)),
+      1,
+    )
+    return { series, max }
+  }, [posts])
+
+  const ratingsBars = useMemo(() => {
+    const counts = reviewSummary.ratings_count || {}
+    const maxCount = Math.max(...Object.values(counts || {}), 1)
+    return [5, 4, 3, 2, 1].map(star => ({
+      star,
+      count: counts[star] || 0,
+      width: `${Math.round(((counts[star] || 0) / maxCount) * 100)}%`,
+    }))
+  }, [reviewSummary])
 
   // ================== RENDER ==================
   return (
@@ -181,7 +234,7 @@ export default function AdminDashboard() {
         <div>
           <h1>Bảng điều khiển</h1>
           <p>
-            Quản lý bài đăng, người dùng và đánh giá trong hệ thống cho thuê
+            Quản lý bài đăng và đánh giá trong hệ thống cho thuê
             chung cư / phòng trọ.
           </p>
         </div>
@@ -197,7 +250,7 @@ export default function AdminDashboard() {
         </div>
       </header>
 
-      {/* STATS CARDS (posts, users, reviews, saved_posts) */}
+      {/* STATS CARDS (posts, reviews) */}
       <section className="admin-stats">
         <div className="admin-stat">
           <p className="admin-stat__label">Tổng bài đăng</p>
@@ -205,19 +258,86 @@ export default function AdminDashboard() {
           <p className="admin-stat__hint">Bảng posts</p>
         </div>
         <div className="admin-stat">
-          <p className="admin-stat__label">Người dùng</p>
-          <p className="admin-stat__value">{stats.total_users}</p>
-          <p className="admin-stat__hint">Bảng users</p>
-        </div>
-        <div className="admin-stat">
           <p className="admin-stat__label">Đánh giá</p>
           <p className="admin-stat__value">{stats.total_reviews}</p>
           <p className="admin-stat__hint">Bảng reviews</p>
         </div>
-        <div className="admin-stat">
-          <p className="admin-stat__label">Bài đã lưu</p>
-          <p className="admin-stat__value">{stats.total_saved}</p>
-          <p className="admin-stat__hint">Bảng saved_posts</p>
+      </section>
+
+      {/* BIỂU ĐỒ */}
+      <section className="admin-section admin-charts">
+        <div className="admin-card admin-chart-card">
+          <header className="admin-card__head">
+            <div>
+              <h3>Biểu đồ số lượng chung cư / phòng</h3>
+            </div>
+          </header>
+          <div className="chart-bar-wrapper chart-bar-wrapper--grouped">
+            {barData.series.map(item => (
+              <div key={item.key} className="chart-bar chart-bar--group">
+                <div className="chart-bar__group">
+                  {item.breakdown.map(part => (
+                    <div className="chart-bar__group-item" key={part.status}>
+                      <div
+                        className="chart-bar__col"
+                        style={{
+                          background: part.color,
+                          height: `${(part.value / barData.max) * 100}%`,
+                        }}
+                        aria-label={`${item.label} - ${part.label}: ${part.value}`}
+                        title={`${item.label} - ${part.label}: ${part.value}`}
+                      />
+                      <span className="chart-bar__value chart-bar__value--sm">
+                        {part.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <span className="chart-bar__label">{item.label}</span>
+              </div>
+            ))}
+          </div>
+          <div className="chart-legend">
+            <div className="chart-legend__item">
+              <span className="chart-legend__swatch chart-legend__swatch--published" />
+              <span>Đang cho thuê</span>
+            </div>
+            <div className="chart-legend__item">
+              <span className="chart-legend__swatch chart-legend__swatch--pending" />
+              <span>Chờ duyệt</span>
+            </div>
+            <div className="chart-legend__item">
+              <span className="chart-legend__swatch chart-legend__swatch--draft" />
+              <span>Còn trống</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="admin-card admin-chart-card">
+          <header className="admin-card__head">
+            <div>
+              <h3>Điểm xếp hạng đánh giá </h3>
+              <p>
+                Điểm trung bình: {reviewSummary.average_rating.toFixed(1)}★ ·{' '}
+                {reviewSummary.total_reviews} đánh giá
+              </p>
+            </div>
+          </header>
+          <div className="chart-rating-wrapper">
+            {ratingsBars.map(row => (
+              <div key={row.star} className="chart-rating-row">
+                <span className="chart-rating-star">{row.star}★</span>
+                <div className="chart-rating-bar">
+                  <div
+                    className="chart-rating-bar__fill"
+                    style={{ width: row.width }}
+                    aria-label={`Số đánh giá ${row.star} sao: ${row.count}`}
+                  />
+                </div>
+                <span className="chart-rating-count">{row.count}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -268,7 +388,6 @@ export default function AdminDashboard() {
               <option value="all">Trạng thái: Tất cả</option>
               <option value="pending">Chờ duyệt</option>
               <option value="published">Đang hiển thị</option>
-              <option value="hidden">Đã ẩn</option>
             </select>
             <button
               type="button"
@@ -365,15 +484,6 @@ export default function AdminDashboard() {
                         >
                           Sửa
                         </Link>
-                        <button
-                          type="button"
-                          className="admin-link admin-link--danger"
-                          onClick={() =>
-                            handleToggleStatus(post.id, post.status)
-                          }
-                        >
-                          {post.status === 'published' ? 'Ẩn' : 'Hiển thị'}
-                        </button>
                       </td>
                     </tr>
                   ))}

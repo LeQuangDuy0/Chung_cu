@@ -11,6 +11,34 @@ use App\Models\Notification;
 class ReviewController extends Controller
 {
     /**
+     * ADMIN/LESSOR: Lấy review cho các bài đăng do lessor sở hữu.
+     * GET /api/admin/reviews
+     */
+    public function adminIndex(Request $request)
+    {
+        $user = Auth::user();
+
+        if (!$user || $user->role !== 'lessor') {
+            return response()->json(['message' => 'Không có quyền'], 403);
+        }
+
+        $reviews = Review::with([
+                'user:id,name',
+                'post:id,title,user_id',
+            ])
+            ->whereHas('post', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'status' => true,
+            'data'   => $reviews,
+        ]);
+    }
+
+    /**
      * TRANG TỔNG: Lấy tất cả review của TẤT CẢ post
      * GET /api/reviews?stars=5&page=1&per_page=12
      */

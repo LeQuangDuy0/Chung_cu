@@ -7,6 +7,11 @@ export default function AdminAmenities() {
   const [q, setQ] = useState('')               // từ khoá tìm kiếm (slug/name)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showModal, setShowModal] = useState(false)  // hiển thị modal
+  const [editingItem, setEditingItem] = useState(null)  // item đang sửa (null = thêm mới)
+  const [formData, setFormData] = useState({ name: '' })
+  const [formLoading, setFormLoading] = useState(false)
+  const [formError, setFormError] = useState('')
 
   // ===== LOAD TIỆN ÍCH TỪ API =====
   useEffect(() => {
@@ -40,9 +45,16 @@ export default function AdminAmenities() {
          *   }
          * hoặc trả trực tiếp mảng [] cũng được.
          */
+        const token = localStorage.getItem('access_token')
         const res = await fetch(
           `/api/admin/amenities?${params.toString()}`,
-          { signal: controller.signal },
+          {
+            signal: controller.signal,
+            headers: {
+              Accept: 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+          },
         )
 
         const text = await res.text()
@@ -72,6 +84,84 @@ export default function AdminAmenities() {
     return () => controller.abort()
   }, [q])
 
+  // ===== MỞ MODAL THÊM/SỬA =====
+  const handleOpenModal = (item = null) => {
+    setEditingItem(item)
+    setFormData({
+      name: item?.name || '',
+    })
+    setFormError('')
+    setShowModal(true)
+  }
+
+  // ===== ĐÓNG MODAL =====
+  const handleCloseModal = () => {
+    setShowModal(false)
+    setEditingItem(null)
+    setFormData({ name: '' })
+    setFormError('')
+  }
+
+  // ===== XỬ LÝ THAY ĐỔI FORM =====
+  const handleFormChange = (e) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  // ===== TẠO/SỬA TIỆN ÍCH =====
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setFormError('')
+    setFormLoading(true)
+
+    try {
+      const token = localStorage.getItem('access_token')
+      if (!token) {
+        throw new Error('Bạn chưa đăng nhập.')
+      }
+
+      const url = editingItem
+        ? `/api/amenities/${editingItem.id}`
+        : '/api/amenities'
+      const method = editingItem ? 'PUT' : 'POST'
+
+      const res = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: formData.name,
+        }),
+      })
+
+      const text = await res.text()
+      let json = {}
+      try {
+        json = text ? JSON.parse(text) : {}
+      } catch {
+        throw new Error('Response không phải JSON hợp lệ.')
+      }
+
+      if (!res.ok) {
+        throw new Error(json?.message || 'Có lỗi khi lưu tiện ích')
+      }
+
+      // Đóng modal và reload danh sách
+      handleCloseModal()
+      // Trigger reload bằng cách thay đổi q
+      setQ((prev) => prev + ' ')
+      setTimeout(() => setQ((prev) => prev.trim()), 100)
+    } catch (err) {
+      console.error(err)
+      setFormError(err.message || 'Có lỗi khi lưu tiện ích')
+    } finally {
+      setFormLoading(false)
+    }
+  }
+
   // ===== XOÁ 1 TIỆN ÍCH =====
   const handleDelete = async (id) => {
     if (!window.confirm(`Bạn chắc chắn muốn xoá tiện ích #${id}?`)) return
@@ -87,9 +177,19 @@ export default function AdminAmenities() {
        *   $amenity->posts()->detach();
        * - Sau đó $amenity->delete();
        */
-      const res = await fetch(`/api/admin/amenities/${id}`, {
+      const token = localStorage.getItem('access_token')
+      if (!token) {
+        alert('Bạn chưa đăng nhập.')
+        return
+      }
+
+      const res = await fetch(`/api/amenities/${id}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
       })
 
       const text = await res.text()
@@ -124,11 +224,10 @@ export default function AdminAmenities() {
           </p>
         </div>
 
-        {/* TODO: sau này mở modal / chuyển sang trang tạo tiện ích mới */}
         <button
           type="button"
           className="admin-btn admin-btn--primary"
-          onClick={() => alert('TODO: mở form tạo tiện ích mới')}
+          onClick={() => handleOpenModal()}
         >
           + Thêm tiện ích
         </button>
@@ -183,13 +282,10 @@ export default function AdminAmenities() {
                   <td>{amenity.name}</td>
                   <td>{amenity.posts_count ?? 0}</td>
                   <td className="admin-td-actions">
-                    {/* TODO: thay alert bằng form sửa tiện ích */}
                     <button
                       type="button"
                       className="admin-chip admin-chip--ghost"
-                      onClick={() =>
-                        alert(`TODO: mở form sửa tiện ích #${amenity.id}`)
-                      }
+                      onClick={() => handleOpenModal(amenity)}
                     >
                       Sửa
                     </button>
@@ -207,6 +303,76 @@ export default function AdminAmenities() {
           </table>
         </div>
       </div>
+
+      {/* MODAL THÊM/SỬA TIỆN ÍCH */}
+      {showModal && (
+        <div
+          className="admin-modal-overlay"
+          onClick={(e) => {
+            if (e.target.classList.contains('admin-modal-overlay')) {
+              handleCloseModal()
+            }
+          }}
+        >
+          <div className="admin-modal">
+            <div className="admin-modal__header">
+              <h3>{editingItem ? 'Sửa tiện ích' : 'Thêm tiện ích mới'}</h3>
+              <button
+                type="button"
+                className="admin-modal__close"
+                onClick={handleCloseModal}
+              >
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="admin-modal__body">
+              {formError && (
+                <p className="admin-error" style={{ marginBottom: '1rem' }}>
+                  {formError}
+                </p>
+              )}
+
+              <div className="admin-field">
+                <label className="admin-label">
+                  Tên tiện ích <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  className="admin-input"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleFormChange}
+                  placeholder="Ví dụ: Máy lạnh, WC riêng, Wifi..."
+                  required
+                  disabled={formLoading}
+                />
+                <small style={{ color: '#94a3b8', fontSize: '0.875rem' }}>
+                  Slug sẽ được tự động tạo từ tên
+                </small>
+              </div>
+
+              <div className="admin-modal__footer">
+                <button
+                  type="button"
+                  className="admin-btn admin-btn--ghost"
+                  onClick={handleCloseModal}
+                  disabled={formLoading}
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="admin-btn admin-btn--primary"
+                  disabled={formLoading}
+                >
+                  {formLoading ? 'Đang lưu...' : editingItem ? 'Cập nhật' : 'Thêm mới'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </section>
   )
 }

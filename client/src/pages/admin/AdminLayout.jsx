@@ -31,10 +31,6 @@ export default function AdminLayout() {
             Bài đăng (posts)
           </NavLink>
 
-          <NavLink to="/admin/users" className={navClass}>
-            Người dùng (users)
-          </NavLink>
-
           <NavLink to="/admin/reviews" className={navClass}>
             Đánh giá (reviews)
           </NavLink>
@@ -50,21 +46,6 @@ export default function AdminLayout() {
 
           <NavLink to="/admin/amenities" className={navClass}>
             Tiện ích (amenities)
-          </NavLink>
-
-          <NavLink
-            to="/admin/environment-features"
-            className={navClass}
-          >
-            Môi trường xung quanh
-          </NavLink>
-
-          <NavLink to="/admin/locations" className={navClass}>
-            Địa lý (provinces / districts / wards)
-          </NavLink>
-
-          <NavLink to="/admin/saved-posts" className={navClass}>
-            Bài đã lưu (saved_posts)
           </NavLink>
         </div>
 

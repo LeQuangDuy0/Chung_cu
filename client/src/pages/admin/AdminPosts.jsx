@@ -50,48 +50,6 @@ export default function AdminPosts() {
     load()
   }, [])
 
-  // ===== ĐỔI TRẠNG THÁI BÀI: PUT /api/posts/:id =====
-  const changeStatus = async (id, status) => {
-    try {
-      const token = localStorage.getItem('access_token')
-      if (!token) {
-        alert('Bạn chưa đăng nhập.')
-        return
-      }
-
-      const res = await fetch(`/api/posts/${id}`, {
-        method: 'PUT', // ← ĐỔI TỪ PATCH SANG PUT
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status }),
-      })
-
-      const text = await res.text()
-      let data
-      try {
-        data = JSON.parse(text)
-      } catch {
-        console.error('RESP TEXT:', text)
-        throw new Error('Máy chủ trả về dữ liệu không hợp lệ.')
-      }
-
-      if (!res.ok || data.status === false) {
-        throw new Error(data.message || 'Không đổi được trạng thái.')
-      }
-
-      // Cập nhật lại list trên frontend
-      setItems((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, status } : p)),
-      )
-    } catch (err) {
-      console.error(err)
-      alert(err.message || 'Có lỗi khi đổi trạng thái')
-    }
-  }
-
   // ===== XÓA BÀI: DELETE /api/posts/:id =====
   const handleDelete = async (id) => {
     if (!window.confirm('Bạn chắc chắn muốn xóa bài này?')) return
@@ -153,7 +111,7 @@ export default function AdminPosts() {
         <div>
           <h2 className="admin-page__title">Quản lý bài đăng</h2>
           <p className="admin-page__desc">
-            Duyệt bài, ẩn/hiện, chỉnh sửa hoặc xóa bài cho thuê.
+            Duyệt bài, chỉnh sửa hoặc xóa bài cho thuê.
           </p>
         </div>
 
@@ -197,20 +155,6 @@ export default function AdminPosts() {
                 <td>{formatDate(p.created_at)}</td>
                 <td>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    {/* Ẩn / Duyệt (hiển thị) */}
-                    <button
-                      type="button"
-                      className="admin-btn admin-btn--sm"
-                      onClick={() =>
-                        changeStatus(
-                          p.id,
-                          p.status === 'published' ? 'hidden' : 'published',
-                        )
-                      }
-                    >
-                      {p.status === 'published' ? 'Ẩn' : 'Duyệt'}
-                    </button>
-
                     {/* Sửa: sau này làm trang edit */}
                     <button
                       type="button"

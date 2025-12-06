@@ -12,7 +12,7 @@ export default function AdminPostEdit() {
     price: '',
     area: '',
     address: '',
-    status: 'draft', // draft | published | hidden
+    status: 'draft', // draft | published
   })
 
   const [categories, setCategories] = useState([])
@@ -256,7 +256,6 @@ export default function AdminPostEdit() {
                   >
                     <option value="draft">Nháp</option>
                     <option value="published">Đang cho thuê</option>
-                    <option value="hidden">Đã ẩn</option>
                   </select>
                 </label>
               </div>
