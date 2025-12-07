@@ -3,6 +3,9 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import '../assets/style/pages/blog.css'
 
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api'
+
 const MOCK_BLOGS = [
   {
     id: 1,
@@ -54,6 +57,24 @@ const MOCK_BLOGS = [
   },
 ]
 
+function mapApiBlogToUi(b) {
+  return {
+    id: b.id,
+    title: b.title || b.name || 'Bài viết',
+    category:
+      b.category?.name || b.category_name || b.category || 'Khác',
+    image:
+      b.image_url ||
+      b.thumbnail_url ||
+      b.cover_image ||
+      'https://via.placeholder.com/800x500?text=Blog',
+    created_at: b.created_at || b.published_at || '2024-01-01',
+    author: b.author?.name || b.author_name || 'Apartments Team',
+    read_time: b.read_time || '5 phút đọc',
+    excerpt: b.excerpt || b.summary || b.description || '',
+  }
+}
+
 export default function BlogPage() {
   const [blogs, setBlogs] = useState(MOCK_BLOGS)
   const [loading, setLoading] = useState(false)
@@ -61,16 +82,60 @@ export default function BlogPage() {
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('')
 
-  // Nếu sau này có API thật thì thay vào đây
+  // LOAD BLOG TỪ API
   useEffect(() => {
-    // ví dụ:
-    // const API_BASE = 'http://127.0.0.1:8000'
-    // fetch(`${API_BASE}/api/blogs`) ...
+    let cancelled = false
+
+    async function fetchBlogs() {
+      try {
+        setLoading(true)
+        setError('')
+
+        const res = await fetch(`${API_BASE_URL}/blogs`, {
+          headers: { Accept: 'application/json' },
+        })
+
+        const text = await res.text()
+        let json
+        try {
+          json = JSON.parse(text)
+        } catch {
+          throw new Error('Phản hồi blogs không phải JSON hợp lệ.')
+        }
+
+        if (!res.ok) {
+          throw new Error(json?.message || 'Không tải được danh sách blog')
+        }
+
+        const list = json.data || json || []
+        if (!Array.isArray(list) || list.length === 0) return
+
+        const mapped = list.map(mapApiBlogToUi)
+        if (!cancelled) {
+          setBlogs(mapped)
+        }
+      } catch (err) {
+        console.error('Lỗi load blogs:', err)
+        if (!cancelled) {
+          setError(err.message || 'Có lỗi khi tải blog, đang dùng dữ liệu demo.')
+          setBlogs(MOCK_BLOGS)
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    fetchBlogs()
+    return () => {
+      cancelled = true
+    }
   }, [])
 
-  const categories = ['Kinh nghiệm thuê trọ', 'Gợi ý khu vực', 'Mẹo tiết kiệm', 'Checklist']
+  const categories = [
+    ...new Set(blogs.map(b => b.category).filter(Boolean)),
+  ]
 
-  const filtered = blogs.filter((b) => {
+  const filtered = blogs.filter(b => {
     const matchCat = category ? b.category === category : true
     const matchSearch = search
       ? b.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -83,11 +148,12 @@ export default function BlogPage() {
     <main className="container container--main blog-page">
       <header className="blog-header">
         <div>
-            
-          <h1 className="blog-title">Cẩm nang thuê trọ &amp; ở chung cư</h1>
+          <h1 className="blog-title">
+            Cẩm nang thuê trọ &amp; ở chung cư
+          </h1>
           <p className="blog-subtitle">
-            Tổng hợp kinh nghiệm thực tế dựa trên hàng nghìn bài đăng, đánh giá &amp; khu vực trong hệ
-            thống.
+            Tổng hợp kinh nghiệm thực tế dựa trên hàng nghìn bài đăng, đánh
+            giá &amp; khu vực trong hệ thống.
           </p>
         </div>
       </header>
@@ -102,12 +168,13 @@ export default function BlogPage() {
             <>
               {filtered.length === 0 && (
                 <p className="blog-empty">
-                  Không tìm thấy bài viết phù hợp. Thử đổi từ khóa hoặc danh mục khác nhé.
+                  Không tìm thấy bài viết phù hợp. Thử đổi từ khóa hoặc danh
+                  mục khác nhé.
                 </p>
               )}
 
               <div className="blog-grid">
-                {filtered.map((b) => (
+                {filtered.map(b => (
                   <article key={b.id} className="blog-card">
                     <div className="blog-card__media">
                       <img src={b.image} alt={b.title} />
@@ -125,7 +192,10 @@ export default function BlogPage() {
                         Bởi <strong>{b.author}</strong> · {b.read_time}
                       </p>
                       <p className="blog-card__excerpt">{b.excerpt}</p>
-                      <Link to={`/blog/${b.id}`} className="blog-card__more">
+                      <Link
+                        to={`/blog/${b.id}`}
+                        className="blog-card__more"
+                      >
                         Đọc chi tiết
                       </Link>
                     </div>
@@ -145,16 +215,19 @@ export default function BlogPage() {
               <input
                 type="search"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={e => setSearch(e.target.value)}
                 placeholder="ví dụ: xem trọ lần đầu..."
               />
             </label>
 
             <label className="blog-field">
               <span>Danh mục</span>
-              <select value={category} onChange={(e) => setCategory(e.target.value)}>
+              <select
+                value={category}
+                onChange={e => setCategory(e.target.value)}
+              >
                 <option value="">Tất cả</option>
-                {categories.map((c) => (
+                {categories.map(c => (
                   <option key={c} value={c}>
                     {c}
                   </option>
@@ -166,7 +239,7 @@ export default function BlogPage() {
           <div className="blog-widget">
             <h3>Bài viết nổi bật</h3>
             <ul className="blog-hotlist">
-              {MOCK_BLOGS.slice(0, 3).map((b) => (
+              {blogs.slice(0, 3).map(b => (
                 <li key={b.id}>
                   <Link to={`/blog/${b.id}`}>
                     <span className="blog-hotlist__title">{b.title}</span>
@@ -183,8 +256,9 @@ export default function BlogPage() {
             <h3>Dựa trên dữ liệu thực</h3>
             <p>
               Các bài viết được đề xuất từ dữ liệu <strong>posts</strong>,{' '}
-              <strong>reviews</strong>, khu vực (<strong>provinces, districts, wards</strong>) để
-              giúp bạn chọn nơi ở phù hợp hơn.
+              <strong>reviews</strong>, khu vực (
+              <strong>provinces, districts, wards</strong>) để giúp bạn chọn
+              nơi ở phù hợp hơn.
             </p>
           </div>
         </aside>

@@ -1,21 +1,55 @@
 /* =========================
-   THEME & TOKENS (override)
+   THEME & TOKENS
    ========================= */
 :root {
-  --c-primary: #38bdf8;                 /* xanh cyan, hợp nền gradient */
-  --c-accent: #ffffff;                  /* màu nhấn trắng */
-  --c-border: rgba(148, 163, 184, 0.4); /* viền xám lạnh */
-  --c-text: #e5e7eb;                    /* chữ chính trên nền tối */
-  --c-muted: #94a3b8;                   /* chữ phụ */
+  --c-primary: #38bdf8;                 /* xanh cyan */
+  --c-accent: #ffffff;
+  --c-border: rgba(148, 163, 184, 0.4);
+  --c-text: #e5e7eb;
+  --c-muted: #94a3b8;
   --radius: 12px;
   --gap: 12px;
-  --h-field: 44px;                      /* chiều cao thống nhất của input/select/button */
+  --h-field: 44px;
   --shadow-soft: 0 18px 40px rgba(15, 23, 42, 0.85);
 }
 
 /* =========================
-   HERO + KHỐI NỀN
+   GLOBAL
    ========================= */
+.container {
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+/* nếu click anchor tới các block này thì trừ phần header sticky */
+.re-tools,
+.rebar__inner,
+.re-results__head {
+  scroll-margin-top: 72px;
+}
+
+/* =========================
+   HERO
+   ========================= */
+
+.re-hero {
+  position: relative;
+  height: 300px;
+  padding: 22px 0;
+  border-bottom: 1px solid var(--c-border);
+  overflow: hidden;
+  z-index: 0;
+}
+
+.re-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.18);
+  pointer-events: none;
+  z-index: -1;
+}
+
 .container .re-hero__inner {
   width: 100%;
   max-width: 1200px;
@@ -27,45 +61,24 @@
   gap: 16px;
 }
 
-/* hero ôm background (ảnh / gradient) */
-.re-hero {
-  height: 300px;
-  position: relative;                   /* để ::before bám vào hero, không bám full body */
-  overflow: hidden;                     /* lớp phủ không tràn */
-  border-bottom: 1px solid var(--c-border);
-  padding: 22px 0;
-  z-index: 0;
-}
-
-/* lớp phủ tối để dễ đọc chữ, NHƯNG không chặn click */
-.re-hero::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.18);
-  pointer-events: none;                 /* không ăn sự kiện chuột */
-  z-index: -1;                          /* nằm dưới nội dung hero */
-}
-
-/* nội dung hero nổi lên trên overlay */
 .re-hero__inner {
   position: relative;
   z-index: 1;
 }
 
 .re-hero h1 {
-  color: #f9fafb;
+  margin: 0 0 6px;
   font-size: 32px;
   font-weight: 800;
-  margin: 0 0 6px;
+  color: #f9fafb;
   text-shadow:
     0 0 12px rgba(15, 23, 42, 0.9),
     0 4px 10px rgba(0, 0, 0, 0.8);
 }
 
 .re-hero p {
-  color: var(--c-muted);
   margin: 0;
+  color: var(--c-muted);
 }
 
 .re-hero__art {
@@ -78,24 +91,14 @@
   background-color: #020617;
 }
 
-@media (max-width:900px) {
-  .re-hero__inner {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .re-hero__art {
-    width: 100%;
-  }
-}
-
 /* =========================
-   STICKY SEARCH / FILTER BAR
+   STICKY SEARCH BAR
    ========================= */
+
 .rebar {
-                     /* dính trên cùng khi scroll */
+  position: sticky;                     /* dính trên cùng khi scroll */
   top: 0;
-                        /* cao hơn hero để form luôn click được */
+  z-index: 30;
   background: rgba(15, 23, 42, 0.96);
   border-bottom: 1px solid var(--c-border);
 }
@@ -107,15 +110,17 @@
 
 .rebar__inner {
   display: flex;
-  gap: var(--gap);
   align-items: center;
+  gap: var(--gap);
   padding: 12px 0;
 }
 
+/* form tìm kiếm chính trong bar */
 .rebar-search {
   display: flex;
-  gap: 8px;
   flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 8px;
   column-gap: 30px;
   padding: 0 20px;
 }
@@ -140,10 +145,10 @@
 }
 
 .re-input input {
+  width: 100%;
   border: 0;
   outline: none;
   background: transparent;
-  width: 100%;
   font-size: 15px;
   color: var(--c-text);
 }
@@ -175,6 +180,7 @@
   color: #0f172a;
   border-color: var(--c-primary);
   background: var(--c-primary);
+  transition: transform .12s ease, filter .12s ease;
 }
 
 .re-btn--primary {
@@ -202,6 +208,7 @@
 /* =========================
    TOOLS + CHIPS
    ========================= */
+
 .re-tools {
   display: flex;
   justify-content: space-between;
@@ -217,6 +224,13 @@
   gap: 8px;
 }
 
+.re-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-bottom: 10px;
+}
+
 .re-chip {
   border: 1px solid var(--c-border);
   background: rgba(15, 23, 42, 0.96);
@@ -225,19 +239,13 @@
   padding: 7px 12px;
   font-size: 13px;
   cursor: pointer;
+  transition: background .12s ease, color .12s ease, border-color .12s ease;
 }
 
 .re-chip.is-on {
   background: rgba(56, 189, 248, 0.12);
   color: var(--c-primary);
   border-color: rgba(56, 189, 248, 0.65);
-}
-
-.re-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding-bottom: 10px;
 }
 
 .re-chip.is-active {
@@ -254,8 +262,9 @@
 }
 
 /* =========================
-   LIST VIEW (NẰM NGANG)
+   LIST VIEW
    ========================= */
+
 .re-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -333,6 +342,22 @@
   font-weight: 800;
 }
 
+.re-card__amen {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.re-card__tag {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.06);
+  white-space: nowrap;
+}
+
 .re-card__foot {
   margin-top: auto;
   display: flex;
@@ -345,20 +370,10 @@
   font-size: 13px;
 }
 
-@media (max-width:720px) {
-  .re-card {
-    flex-direction: column;
-  }
-
-  .re-card__media {
-    height: 190px;
-    flex: 0 0 auto;
-  }
-}
-
 /* =========================
    TIÊU ĐỀ KẾT QUẢ
    ========================= */
+
 .re-results__head {
   display: flex;
   align-items: baseline;
@@ -383,6 +398,7 @@
 /* =========================
    PHÂN TRANG
    ========================= */
+
 .re-paging {
   display: flex;
   flex-wrap: wrap;
@@ -431,6 +447,7 @@
 /* =========================
    BANNER MAP
    ========================= */
+
 .re-map {
   background: radial-gradient(
       160% 160% at 0% 0%,
@@ -459,46 +476,28 @@
   opacity: .9;
 }
 
-@media (max-width:680px) {
-  .re-map__inner {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-}
-
 /* =========================
-   NHỎ: chỉnh khoảng cách đều hơn
+   LAYOUT 2 CỘT
    ========================= */
-.container {
-  padding-left: 16px;
-  padding-right: 16px;
-}
 
-/* nếu chưa có */
-.re-tools,
-.rebar__inner,
-.re-results__head {
-  scroll-margin-top: 72px;
-}
-
-/* ================ LAYOUT 2 CỘT ================ */
 .re-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px; /* trái linh hoạt, phải 320px */
+  grid-template-columns: minmax(0, 1fr) 320px;
   gap: 18px;
   align-items: start;
   padding: 16px 0;
 }
 
 .re-main {
-  min-width: 0; /* fix overflow khi có grid */
+  min-width: 0;
 }
 
 .re-aside {
+  position: sticky;
   top: 84px;
 }
 
-/* ================ CARD LỌC BÊN PHẢI ================ */
+/* Card lọc bên phải */
 .re-filtercard {
   margin-top: 70px;
   background:
@@ -575,28 +574,113 @@
   margin-top: 6px;
 }
 
-/* Responsive: dưới 960px thì aside xuống dưới */
-@media (max-width: 960px) {
+/* =========================
+   RESPONSIVE
+   ========================= */
+
+/* Tablet ≤ 1024px */
+@media (max-width: 1024px) {
+  .container .re-hero__inner {
+    padding: 0 16px;
+  }
+
   .re-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 280px;
+  }
+
+  .re-card__media {
+    flex-basis: 260px;
+  }
+}
+
+/* Mobile lớn ≤ 768px */
+@media (max-width: 768px) {
+  .re-hero {
+    height: auto;
+  }
+
+  .container .re-hero__inner {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0 12px;
+  }
+
+  .re-hero__art {
+    width: 100%;
+    height: 190px;
+  }
+
+  .rebar__inner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .rebar-search {
+    flex-direction: column;
+    padding: 0;
+    column-gap: 0;
+  }
+
+  .re-input--grow {
+    flex: 1 1 auto;
+  }
+
+  .re-tools {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .re-layout {
+    grid-template-columns: 1fr; /* aside xuống dưới */
   }
 
   .re-aside {
     position: static;
   }
-}
-.re-card__amen {
-  margin-top: 6px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+
+  .re-card {
+    flex-direction: column;
+  }
+
+  .re-card__media {
+    flex: 0 0 auto;
+    height: 190px;
+  }
+
+  .re-results__head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .re-map__inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
-.re-card__tag {
-  font-size: 11px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.15);
-  background: rgba(255,255,255,0.06);
-  white-space: nowrap;
+/* Mobile nhỏ ≤ 480px */
+@media (max-width: 480px) {
+  .re-hero h1 {
+    font-size: 24px;
+  }
+
+  .re-card__title {
+    font-size: 15px;
+  }
+
+  .re-card__meta {
+    font-size: 13px;
+  }
+
+  .re-paging button,
+  .re-paging__ellipsis {
+    min-width: 34px;
+    height: 34px;
+    font-size: 13px;
+  }
+
+  .re-filtercard {
+    margin-top: 30px;
+  }
 }
