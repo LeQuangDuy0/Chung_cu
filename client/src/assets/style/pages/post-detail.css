@@ -1569,14 +1569,14 @@
   }
 }
 
-<<<<<<< HEAD
+ 
 .favorite-btn {
     display: flex;
     align-items: center;
     justify-content: center; 
     gap: 6px;
 }
-=======
+ 
 .pd-reply-item {
   margin-top: 12px;
   padding-left: 6px;
@@ -1830,4 +1830,4 @@
   background: #3b82f6;
   color: white;
 }
->>>>>>> 8ed1b55 (Deploy: update lessor and admin mobile UI, header links)
+ 
