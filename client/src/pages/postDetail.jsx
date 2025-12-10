@@ -2,7 +2,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import '../assets/style/pages/post-detail.css'
+ 
 import { HeartPlus , HeartOff  } from 'lucide-react';
+ 
+import ReviewTree from "@/components/ReviewTree"
+ 
 
 // DÙNG CHUNG CHO MỌI ẢNH: string, CloudinaryFile, PostImage + file
 function normalizeImageUrl(source) {
@@ -29,26 +33,93 @@ function normalizeImageUrl(source) {
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api'
 
-/** ====== LOCAL WISHLIST HELPERS (dùng chung với các trang khác) ====== */
-function getWishlistIds() {
+/** ====== WISHLIST HELPERS - DỀ DÀI VỀ DATABASE API ====== */
+async function getWishlistIdsFromAPI(token) {
   try {
-    const raw = localStorage.getItem('wishlist_posts')
-    if (!raw) return []
-    const parsed = JSON.parse(raw)
-    if (!Array.isArray(parsed)) return []
-    return parsed
-      .map(v => Number(v))
-      .filter(v => !Number.isNaN(v))
+    if (!token) {
+      // Không đăng nhập, dùng localStorage
+      const raw = localStorage.getItem('wishlist_posts')
+      if (!raw) return []
+      const parsed = JSON.parse(raw)
+      if (!Array.isArray(parsed)) return []
+      return parsed
+        .map(v => Number(v))
+        .filter(v => !Number.isNaN(v))
+    }
+    
+    // Đăng nhập, lấy từ API
+    const res = await fetch(`${API_BASE_URL}/saved-posts/ids`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+      },
+    })
+    
+    if (!res.ok) {
+      // API lỗi, fallback localStorage
+      const raw = localStorage.getItem('wishlist_posts')
+      if (!raw) return []
+      const parsed = JSON.parse(raw)
+      if (!Array.isArray(parsed)) return []
+      return parsed.map(v => Number(v)).filter(v => !Number.isNaN(v))
+    }
+    
+    const data = await res.json()
+    if (data.status && Array.isArray(data.data)) {
+      return data.data
+    }
+    return []
   } catch (e) {
-    console.error('parse wishlist_posts error', e)
+    console.error('getWishlistIdsFromAPI error', e)
     return []
   }
 }
 
-function saveWishlistIds(ids) {
-  localStorage.setItem('wishlist_posts', JSON.stringify(ids))
-  // để header / icon tim các nơi khác biết thay đổi
-  window.dispatchEvent(new Event('wishlist:changed'))
+async function toggleWishlistAPI(postId, token) {
+  try {
+    if (!token) {
+      // Không đăng nhập, dùng localStorage
+      const raw = localStorage.getItem('wishlist_posts')
+      let arr = raw ? JSON.parse(raw) : []
+      if (!Array.isArray(arr)) arr = []
+      
+      const idx = arr.indexOf(postId)
+      if (idx >= 0) {
+        arr.splice(idx, 1)
+      } else {
+        arr.push(postId)
+      }
+      
+      localStorage.setItem('wishlist_posts', JSON.stringify(arr))
+      window.dispatchEvent(new Event('wishlist:changed'))
+      return
+    }
+    
+    // Đăng nhập, dùng API
+    const ids = await getWishlistIdsFromAPI(token)
+    const isSaved = ids.includes(Number(postId))
+    
+    const url = isSaved
+      ? `http://localhost:8000/api/saved-posts/${postId}`
+      : `http://localhost:8000/api/saved-posts/${postId}`
+    
+    const method = isSaved ? 'DELETE' : 'POST'
+    
+    const res = await fetch(url, {
+      method,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+    })
+    
+    if (res.ok) {
+      window.dispatchEvent(new Event('wishlist:changed'))
+    }
+  } catch (e) {
+    console.error('toggleWishlistAPI error', e)
+  }
 }
 
 export default function PostDetail() {
@@ -140,9 +211,16 @@ export default function PostDetail() {
   // ===== INIT TRẠNG THÁI YÊU THÍCH KHI ĐÃ CÓ POST =====
   useEffect(() => {
     if (!post) return
-    const ids = getWishlistIds()
-    const pid = Number(post.id)
-    setIsFavorite(ids.includes(pid))
+    
+    const token = localStorage.getItem('access_token')
+    
+    const initFav = async () => {
+      const ids = await getWishlistIdsFromAPI(token)
+      const pid = Number(post.id)
+      setIsFavorite(ids.includes(pid))
+    }
+    
+    initFav()
   }, [post])
 
   // ====== dữ liệu hiển thị mềm dẻo ======
@@ -304,96 +382,100 @@ export default function PostDetail() {
     setImageFiles(files.slice(0, 3))
   }
 
-  const handleSubmitReview = async e => {
-    e.preventDefault()
-    setReviewError('')
+const handleSubmitReview = async e => {
+  e.preventDefault()
+  setReviewError('')
 
-    const token = localStorage.getItem('access_token')
-    if (!token) {
-      alert('Bạn cần đăng nhập để gửi đánh giá.')
-      return
-    }
-
-    if (!ratingInput || ratingInput < 1 || ratingInput > 5) {
-      setReviewError('Vui lòng chọn số sao (1–5).')
-      return
-    }
-    if (!contentInput.trim()) {
-      setReviewError('Vui lòng nhập nội dung bình luận.')
-      return
-    }
-
-    try {
-      setSubmittingReview(true)
-
-      const formData = new FormData()
-      formData.append('rating', ratingInput)
-      formData.append('content', contentInput.trim())
-      imageFiles.forEach(file => {
-        formData.append('images[]', file)
-      })
-
-      const res = await fetch(`${API_BASE_URL}/posts/${id}/reviews`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      })
-
-      const text = await res.text()
-      let data
-      try {
-        data = JSON.parse(text)
-      } catch {
-        console.error('RESP TEXT:', text)
-        throw new Error('Máy chủ trả về dữ liệu không hợp lệ.')
-      }
-
-      if (!res.ok || data.status === false) {
-        throw new Error(data.message || 'Không gửi được đánh giá.')
-      }
-
-      const newReview = data.data || data.review || data
-
-      setPost(prev => {
-        if (!prev) return prev
-        const oldReviews = prev.reviews || []
-        const newReviews = [newReview, ...oldReviews]
-        return {
-          ...prev,
-          reviews: newReviews,
-          reviews_count: (prev.reviews_count || oldReviews.length) + 1,
-        }
-      })
-
-      setRatingInput(5)
-      setContentInput('')
-      setImageFiles([])
-      setReviewPage(1)
-    } catch (err) {
-      console.error(err)
-      setReviewError(err.message || 'Có lỗi khi gửi đánh giá.')
-    } finally {
-      setSubmittingReview(false)
-    }
+  const token = localStorage.getItem('access_token')
+  if (!token) {
+    alert('Bạn cần đăng nhập để gửi đánh giá.')
+    return
   }
 
+  if (!ratingInput || ratingInput < 1 || ratingInput > 5) {
+    setReviewError('Vui lòng chọn số sao (1–5).')
+    return
+  }
+  if (!contentInput.trim()) {
+    setReviewError('Vui lòng nhập nội dung bình luận.')
+    return
+  }
+
+  try {
+    setSubmittingReview(true)
+
+    const formData = new FormData()
+    formData.append('rating', ratingInput)
+    formData.append('content', contentInput.trim())
+    imageFiles.forEach(file => {
+      formData.append('images[]', file)
+    })
+
+    const res = await fetch(`${API_BASE_URL}/posts/${id}/reviews`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    })
+
+    const text = await res.text()
+    let data
+    try {
+      data = JSON.parse(text)
+    } catch {
+      console.error('RESP TEXT:', text)
+      throw new Error('Máy chủ trả về dữ liệu không hợp lệ.')
+    }
+
+    if (!res.ok || data.status === false) {
+      throw new Error(data.message || 'Không gửi được đánh giá.')
+    }
+
+    // RESET FORM
+    setRatingInput(5)
+    setContentInput('')
+    setImageFiles([])
+    setReviewPage(1)
+
+    // 🔥 FIX CHÍNH Ở ĐÂY — GỌI LẠI REVIEW TREE
+    await loadReviewTree()
+
+  } catch (err) {
+    console.error(err)
+    setReviewError(err.message || 'Có lỗi khi gửi đánh giá.')
+  } finally {
+    setSubmittingReview(false)
+  }
+}
+
+
   // ===== TOGGLE YÊU THÍCH CHO BÀI NÀY =====
-  const toggleFavorite = () => {
+  const toggleFavorite = async () => {
     if (!post) return
     const pid = Number(post.id)
     if (!pid) return
 
-    let ids = getWishlistIds()
-    if (ids.includes(pid)) {
-      ids = ids.filter(x => x !== pid)
-      setIsFavorite(false)
+    const token = localStorage.getItem('access_token')
+    
+    if (token) {
+      // User đăng nhập, dùng API
+      await toggleWishlistAPI(pid, token)
+      setIsFavorite(!isFavorite)
     } else {
-      ids = [...ids, pid]
-      setIsFavorite(true)
+      // Chưa đăng nhập, dùng localStorage
+      const raw = localStorage.getItem('wishlist_posts')
+      let ids = raw ? JSON.parse(raw) : []
+      if (!Array.isArray(ids)) ids = []
+      
+      if (ids.includes(pid)) {
+        ids = ids.filter(x => x !== pid)
+        setIsFavorite(false)
+      } else {
+        ids = [...ids, pid]
+        setIsFavorite(true)
+      }
+      localStorage.setItem('wishlist_posts', JSON.stringify(ids))
+      window.dispatchEvent(new Event('wishlist:changed'))
     }
-    saveWishlistIds(ids)
   }
 
   // ===== GALLERY MODAL HANDLERS =====
@@ -473,6 +555,80 @@ export default function PostDetail() {
   console.log('DEBUG post.images =', post?.images)
   console.log('DEBUG postImages =', postImages)
   console.log('DEBUG post.thumbnail =', post?.thumbnail)
+
+  // ===== LOAD REPLY TREE =====
+const [reviewTree, setReviewTree] = useState([]);
+
+// Lấy toàn bộ review dạng cây
+async function loadReviewTree() {
+  const res = await fetch(`${API_BASE_URL}/posts/${id}/review-tree`);
+  const data = await res.json();
+  setReviewTree(data.data || []);
+}
+
+// chạy mỗi khi đổi id
+useEffect(() => {
+  loadReviewTree();
+}, [id]);
+
+// Gửi reply vào review gốc
+async function handleReplySubmit(reviewId, content) {
+  const token = localStorage.getItem("access_token");
+  await fetch(`${API_BASE_URL}/reviews/${reviewId}/replies`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ content }),
+  });
+  loadReviewTree();
+}
+
+// Gửi reply vào reply cấp con
+async function handleReplyToReply(replyId, content) {
+  const token = localStorage.getItem("access_token");
+  await fetch(`${API_BASE_URL}/replies/${replyId}/child`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ content }),
+  });
+  loadReviewTree();
+}
+
+// Sửa đánh giá (rating + content)
+async function handleEditReview(reviewId, payload) {
+  const token = localStorage.getItem("access_token");
+  await fetch(`${API_BASE_URL}/reviews/${reviewId}`, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  loadReviewTree();
+}
+
+// Xóa đánh giá
+async function handleDeleteReview(reviewId) {
+  const token = localStorage.getItem("access_token");
+  await fetch(`${API_BASE_URL}/reviews/${reviewId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+    },
+  });
+  loadReviewTree();
+}
+
 
   if (loading) {
     return (
@@ -787,188 +943,61 @@ export default function PostDetail() {
       </section>
 
       {/* ====== ĐÁNH GIÁ & BÌNH LUẬN - FULL WIDTH BÊN DƯỚI ====== */}
-      <section className="pd-reviews-section">
-        <article className="pd-card pd-reviews pd-reviews--full">
-          <h2 className="pd-card__title">Đánh giá & bình luận</h2>
+     {/* ====== ĐÁNH GIÁ & BÌNH LUẬN TREE ====== */}
+<section className="pd-reviews-section">
+  <article className="pd-card pd-reviews pd-reviews--full">
+    <h2 className="pd-card__title">Đánh giá & bình luận</h2>
 
-          {/* TÓM TẮT */}
-          <div className="pd-reviews__summary">
-            <div>
-              {ratingCount > 0 ? (
-                <>
-                  {renderStars(ratingAvg)}
-                  <span className="pd-rating__number">
-                    {ratingAvg.toFixed(1)}/5
-                  </span>
-                  <span className="pd-rating__count">
-                    ({ratingCount} đánh giá)
-                  </span>
-                </>
-              ) : (
-                <span className="pd-rating__empty">
-                  Chưa có đánh giá nào, hãy là người đầu tiên.
-                </span>
-              )}
-            </div>
-          </div>
+    {/* FORM ĐÁNH GIÁ — CHỈ NGƯỜI CHƯA ĐÁNH GIÁ MỚI THẤY */}
+    <form className="pd-review-form" onSubmit={handleSubmitReview}>
+      <h3 className="pd-card__subtitle">Đánh giá phòng</h3>
 
-          {/* LIST REVIEW: tối đa 3 / 1 trang */}
-          {pagedReviews.length > 0 && (
-            <div className="pd-reviews__list">
-              {pagedReviews.map(rv => {
-                const avatarUrl =
-                  rv.user?.avatar_url ||
-                  rv.user?.avatar ||
-                  rv.user?.avatar_path ||
-                  ''
-                return (
-                  <div key={rv.id} className="pd-review-item">
-                    <div className="pd-review-item__head">
-                      <div className="pd-review-item__avatar">
-                        {avatarUrl ? (
-                          <img
-                            src={avatarUrl}
-                            alt={rv.user?.name || 'Người dùng'}
-                          />
-                        ) : (
-                          (rv.user?.name || 'U')
-                            .charAt(0)
-                            .toUpperCase()
-                        )}
-                      </div>
-                      <div>
-                        <p className="pd-review-item__name">
-                          {rv.user?.name || 'Người dùng'}
-                        </p>
-                        <div className="pd-review-item__meta">
-                          {renderStars(rv.rating)}
-                          {rv.created_at && (
-                            <span>
-                              {new Date(
-                                rv.created_at,
-                              ).toLocaleString('vi-VN')}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {rv.content && (
-                      <p className="pd-review-item__content">{rv.content}</p>
-                    )}
-
-                    {/* Block ảnh review nếu sau này có */}
-                    {rv.images && rv.images.length > 0 && (
-                      <div className="pd-review-item__images">
-                        {rv.images.slice(0, 3).map(img => (
-                          <img
-                            key={img.id || img.url}
-                            src={normalizeImageUrl(img)}
-                            alt="review"
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )}
-
-          {/* PAGINATION nhỏ 1 2 3 phía dưới */}
-          {totalReviewPages > 1 && (
-            <div className="pd-reviews__pagination">
-              {Array.from(
-                { length: totalReviewPages },
-                (_, idx) => idx + 1,
-              ).map(pageNum => (
-                <button
-                  key={pageNum}
-                  type="button"
-                  className={
-                    'pd-page-btn' +
-                    (pageNum === reviewPage ? ' is-active' : '')
-                  }
-                  onClick={() => setReviewPage(pageNum)}
-                >
-                  {pageNum}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* FORM GỬI ĐÁNH GIÁ */}
-          <form className="pd-review-form" onSubmit={handleSubmitReview}>
-            <h3 className="pd-card__subtitle">Viết đánh giá của bạn</h3>
-
-            <div className="pd-review-form__row">
-              <label>Đánh giá sao</label>
-              <div className="pd-review-stars-input">
-                {Array.from({ length: 5 }, (_, i) => {
-                  const starVal = i + 1
-                  return (
-                    <button
-                      key={starVal}
-                      type="button"
-                      className={
-                        'pd-star-btn' +
-                        (starVal <= ratingInput ? ' is-on' : '')
-                      }
-                      onClick={() => setRatingInput(starVal)}
-                    >
-                      ★
-                    </button>
-                  )
-                })}
-                <span className="pd-review-stars-input__text">
-                  {ratingInput} / 5
-                </span>
-              </div>
-            </div>
-
-            <div className="pd-review-form__row">
-              <label>Nội dung bình luận</label>
-              <textarea
-                rows="4"
-                value={contentInput}
-                onChange={e => setContentInput(e.target.value)}
-                placeholder="Chia sẻ trải nghiệm thật của bạn về phòng này..."
-              />
-            </div>
-
-            <div className="pd-review-form__row">
-              <label>Ảnh (tối đa 3 ảnh)</label>
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleImagesChange}
-              />
-              {imageFiles.length > 0 && (
-                <ul className="pd-review-form__files">
-                  {imageFiles.map((f, idx) => (
-                    <li key={idx}>{f.name}</li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            {reviewError && (
-              <p className="pd-error" style={{ marginTop: 4 }}>
-                {reviewError}
-              </p>
-            )}
-
-            <button
-              type="submit"
-              className="pd-btn pd-btn--primary"
-              disabled={submittingReview}
+      <div className="pd-review-stars-input">
+        {Array.from({ length: 5 }, (_, i) => {
+          const star = i + 1;
+          return (
+            <span
+              key={star}
+              className={"pd-star-btn" + (star <= ratingInput ? " is-on" : "")}
+              onClick={() => setRatingInput(star)}
             >
-              {submittingReview ? 'Đang gửi...' : 'Gửi đánh giá'}
-            </button>
-          </form>
-        </article>
-      </section>
+              ★
+            </span>
+          );
+        })}
+      </div>
+
+      <textarea
+        rows="4"
+        placeholder="Viết đánh giá về phòng này..."
+        value={contentInput}
+        onChange={(e) => setContentInput(e.target.value)}
+      />
+
+      <button className="pd-btn pd-btn--primary" type="submit">
+        Gửi đánh giá
+      </button>
+    </form>
+
+    {/* RENDER TREE */}
+    <div className="rv-tree-list">
+      {reviewTree.map((rv) => (
+        <ReviewTree
+          key={rv.id}
+          postId={post.id}
+          review={rv}
+          replies={rv.replies || []}
+          onReplySubmit={handleReplySubmit}
+          onReplyToReply={handleReplyToReply}
+          onEditReview={handleEditReview}
+          onDeleteReview={handleDeleteReview}
+          currentUserId={post.user_id}
+        />
+      ))}
+    </div>
+  </article>
+</section>
+
 
       {/* ===== GALLERY MODAL ===== */}
       {showGalleryModal && galleryImages.length > 0 && (

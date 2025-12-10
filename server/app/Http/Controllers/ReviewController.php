@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Review;
 use App\Models\Post;
 use App\Models\Notification;
+use App\Models\ReviewReply;   // <<< THIẾU CÁI NÀY — PHẢI THÊM
 
 class ReviewController extends Controller
 {
@@ -382,4 +383,108 @@ class ReviewController extends Controller
             'message' => 'Đã xoá đánh giá.',
         ]);
     }
+    /**
+     * REPLY VÀO REVIEW GỐC
+     * POST /api/reviews/{id}/replies
+     */
+    public function replyReview(Request $request, $reviewId)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Bạn phải đăng nhập để trả lời.',
+            ], 401);
+        }
+
+        $request->validate([
+            'content' => 'required|string'
+        ]);
+
+        $review = Review::find($reviewId);
+        if (!$review) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Không tìm thấy đánh giá.',
+            ], 404);
+        }
+
+        $reply = ReviewReply::create([
+            'review_id' => $review->id,
+            'user_id'   => $user->id,
+            'content'   => $request->input->{'content'},
+            'parent_id' => null,
+        ]);
+
+        return response()->json([
+            'status' => true,
+            'data'   => $reply
+        ]);
+    }
+
+
+    /**
+     * TRẢ LỜI VÀO MỘT REPLY CON
+     * POST /api/replies/{replyId}/child
+     */
+    public function replyChild(Request $request, $replyId)
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Bạn phải đăng nhập để trả lời.',
+            ], 401);
+        }
+
+        $request->validate([
+            'content' => 'required|string'
+        ]);
+
+        $parent = ReviewReply::find($replyId);
+        if (!$parent) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Không tìm thấy bình luận để trả lời.',
+            ], 404);
+        }
+
+        $reply = ReviewReply::create([
+            'review_id' => $parent->review_id,
+            'user_id'   => $user->id,
+            'content'   => $request->input->{'content'},
+            'parent_id' => $parent->id,
+        ]);
+
+        return response()->json([
+            'status' => true,
+            'data'   => $reply
+        ]);
+    }
+
+
+    /**
+     * TẢI REVIEW TREE ĐẦY ĐỦ
+     * GET /api/posts/{postId}/review-tree
+     */
+    public function getTree($postId)
+    {
+        $reviews = Review::with([
+            'user:id,name,avatar_url',
+            'replies.user:id,name,avatar_url',
+            'replies.children.user:id,name,avatar_url',
+        ])
+        ->where('post_id', $postId)
+        ->where('is_hidden', false)
+        ->orderBy('created_at', 'desc')
+        ->get();
+
+        return response()->json([
+            'status' => true,
+            'data'   => $reviews
+        ]);
+    }
+
+
 }

@@ -87,4 +87,34 @@ class SavedPostController extends Controller
             'message' => 'Đã bỏ lưu bài viết.'
         ]);
     }
+
+    // GET /api/saved-posts/check/{post_id}
+    public function checkSaved($post_id)
+    {
+        $user = Auth::user();
+
+        $isSaved = $user->savedPosts()->where('post_id', $post_id)->exists();
+
+        return response()->json([
+            'status' => true,
+            'data' => [
+                'post_id' => $post_id,
+                'is_saved' => $isSaved,
+            ],
+        ]);
+    }
+
+    // GET /api/saved-posts/ids
+    // Lấy danh sách ID của các bài đã lưu
+    public function getSavedIds()
+    {
+        $user = Auth::user();
+
+        $savedIds = $user->savedPosts()->pluck('post_id')->toArray();
+
+        return response()->json([
+            'status' => true,
+            'data' => $savedIds,
+        ]);
+    }
 }

@@ -767,11 +767,10 @@
   opacity: 0.8;
 }
 /* =========================
-   ADMIN PAGES - MOBILE / RESPONSIVE
-   Keep desktop admin UI intact; apply stacking and touch-friendly sizes on narrow viewports.
+   ADMIN PAGES - MOBILE / RESPONSIVE (FORM, CARD…)
+   Giữ nguyên desktop, chỉ chỉnh khi màn hình nhỏ
    ========================= */
 
-/* Tablet: make admin forms stack into 1 column and reduce paddings */
 @media (max-width: 1024px) {
   .admin-section--card {
     padding: 18px 16px;
@@ -792,7 +791,6 @@
   }
 }
 
-/* Mobile: compact admin layout, full-width inputs, stacked actions */
 @media (max-width: 768px) {
   .admin-section--card {
     padding: 14px;
@@ -848,7 +846,6 @@
     width: 100%;
   }
 
-  /* compact notifications */
   .admin-error,
   .admin-success {
     font-size: 13px;
@@ -856,7 +853,6 @@
   }
 }
 
-/* Very small screens: tighten spacing and increase touch targets */
 @media (max-width: 480px) {
   .admin-section--card {
     padding: 12px;
@@ -874,4 +870,740 @@
   .admin-input--textarea {
     font-size: 15px;
   }
+}
+
+/* =========================================
+   🔥 MOBILE ADMIN SHELL & MENU (KHÔNG ẢNH HƯỞNG DESKTOP)
+   ========================================= */
+
+/* Mặc định: ẩn hoàn toàn UI mobile trên desktop */
+.admin-mobile-topbar,
+.admin-mobile-menu {
+  display: none;
+}
+
+/* Tablet & mobile: ẩn sidebar, chỉnh main, bật topbar + menu mobile */
+@media (max-width: 1024px) {
+  /* Ẩn sidebar trái, 1 cột */
+  .admin-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-sidebar {
+    display: none;
+  }
+
+  .admin-main {
+    padding: 16px 14px 20px;
+  }
+
+  /* ===== TOPBAR MOBILE (avatar + nút menu) ===== */
+  .admin-mobile-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: rgba(15, 23, 42, 0.96);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.4);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 40;
+  }
+
+  /* đẩy nội dung admin xuống dưới topbar */
+  .admin-page {
+    padding-top: 60px;
+  }
+
+  .admin-mobile-avatar {
+    display: flex;
+    align-items: center;
+  }
+
+  .admin-mobile-avatar img {
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    object-fit: cover;
+    border: 2px solid #38bdf8;
+    display: block;
+  }
+
+  .admin-mobile-menu-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(148, 163, 184, 0.25);
+    border: none;
+    padding: 0;
+  }
+
+  .admin-mobile-menu-btn svg {
+    display: block;
+  }
+
+  /* ===== SLIDE MENU MOBILE ===== */
+  .admin-mobile-menu {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    right: -100%;
+    width: 78%;
+    max-width: 320px;
+    height: 100vh;
+    background: #020617;
+    border-left: 1px solid rgba(30, 64, 175, 0.8);
+    padding: 20px 18px;
+    gap: 10px;
+    transition: right 0.25s ease;
+    z-index: 50;
+  }
+
+  .admin-mobile-menu.is-open {
+    right: 0;
+  }
+
+  .admin-mobile-menu-close {
+    align-self: flex-end;
+    font-size: 30px;
+    line-height: 1;
+    color: #e5e7eb;
+    cursor: pointer;
+    margin-bottom: 6px;
+  }
+
+  .admin-mobile-userbox {
+    text-align: center;
+  
+  }
+
+  .admin-mobile-userbox .avatar-big {
+    width: 72px;
+    height: 72px;
+    border-radius: 999px;
+    object-fit: cover;
+    border: 2px solid #38bdf8;
+    display: block;
+    margin: 0 auto 6px;
+  }
+
+  .admin-mobile-userbox .name {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .admin-mobile-userbox .email {
+    margin: 2px 0 0;
+    font-size: 13px;
+    color: #9ca3af;
+  }
+
+  .admin-mobile-menu .admin-menu__link {
+    font-size: 14px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    margin-bottom: 4px;
+    border: 1px solid transparent;
+  }
+
+  .admin-mobile-menu .admin-menu__link:hover {
+    border-color: rgba(148, 163, 184, 0.7);
+    background: rgba(15, 23, 42, 0.95);
+  }
+
+  /* ===== Tối ưu phần nội dung cho mobile ===== */
+
+  .admin-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+
+  .admin-header__actions {
+    width: 100%;
+  }
+
+  .admin-header__actions .admin-btn {
+    width: 100%;
+    text-align: center;
+  }
+
+  .admin-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .admin-stat {
+    padding: 8px 10px;
+    border-radius: 14px;
+  }
+
+  .admin-stat__label {
+    font-size: 12px;
+  }
+
+  .admin-stat__value {
+    font-size: 18px;
+  }
+
+  .admin-section {
+    margin-top: 14px;
+    padding: 12px 10px 14px;
+    border-radius: 14px;
+  }
+
+  .admin-section__head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .admin-section__head h2 {
+    font-size: 17px;
+  }
+
+  .admin-section__head p {
+    font-size: 13px;
+  }
+
+  .admin-filters {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .admin-filters .admin-input,
+  .admin-filters .admin-btn {
+    width: 100%;
+  }
+
+  .admin-table-wrap {
+    border-radius: 10px;
+    overflow-x: auto;
+  }
+
+  .admin-table th,
+  .admin-table td {
+    padding: 7px 8px;
+    font-size: 12px;
+  }
+
+  .admin-td-title {
+    max-width: 180px;
+  }
+
+  .admin-td-sub {
+    font-size: 11px;
+  }
+
+  .admin-td-actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-td-actions .admin-link {
+    font-size: 12px;
+  }
+
+  .admin-paging {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .admin-paging button {
+    width: 100%;
+  }
+
+  /* Bảng yêu cầu lessor gọn lại */
+  .admin-section:nth-of-type(3) .admin-table th,
+  .admin-section:nth-of-type(3) .admin-table td {
+    padding: 7px 8px;
+  }
+}
+
+/* Mobile rất nhỏ: 1 cột stats */
+@media (max-width: 480px) {
+  .admin-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-main {
+    padding: 12px 10px 16px;
+  }
+
+  .admin-header h1 {
+    font-size: 20px;
+  }
+
+  .admin-section {
+    padding: 10px 8px 12px;
+  }
+
+  .admin-table th,
+  .admin-table td {
+    padding: 6px 6px;
+    font-size: 11px;
+  }
+
+  .admin-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+
+  .admin-btn,
+  .admin-input {
+    font-size: 13px;
+  }
+}
+/* ============================
+   🔥 MOBILE ADMIN TABBAR
+============================ */
+
+.admin-tabbar {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .admin-tabbar {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 58px;
+    background: #0f172a;
+    border-top: 1px solid rgba(148,163,184,0.3);
+    z-index: 60;
+  }
+
+  .admin-tabbar-item {
+    text-align: center;
+    color: #cbd5f5;
+    font-size: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .admin-tabbar-item svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .admin-tabbar-item.active {
+    color: #38bdf8;
+  }
+}
+
+/* tránh tabbar che nội dung */
+@media (max-width: 768px) {
+  .admin-main {
+    padding-bottom: 70px !important;
+  }
+}
+@media (max-width: 480px) {
+  .admin-table th,
+  .admin-table td {
+    font-size: 11px;
+    padding: 6px 8px;
+  }
+
+  .admin-header h1 {
+    font-size: 20px;
+  }
+
+  .admin-stat__value {
+    font-size: 18px;
+  }
+
+  .admin-stat {
+    padding: 8px 10px;
+  }
+}
+/* ===========================
+   🔥 MOBILE ADMIN UI ONLY
+   =========================== */
+
+/* Ẩn giao diện mobile khi desktop */
+.admin-mobile-topbar,
+.admin-mobile-menu,
+.admin-tabbar {
+  display: none;
+}
+
+/* ===========================
+   🔥 MOBILE (<=1024px)
+   =========================== */
+@media (max-width: 1024px) {
+
+  /* Ẩn sidebar desktop */
+  .admin-sidebar {
+    display: none !important;
+  }
+
+  /* Layout full width */
+  .admin-shell {
+    grid-template-columns: 1fr !important;
+  }
+
+  .admin-main {
+    padding: 70px 14px 80px !important; /* chừa topbar và tabbar */
+  }
+
+  /* ===== TOPBAR MOBILE ===== */
+  .admin-mobile-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: rgba(15, 23, 42, 0.95);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.35);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+  }
+
+  .admin-mobile-avatar img {
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    object-fit: cover;
+    border: 2px solid #38bdf8;
+  }
+
+  .admin-mobile-menu-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 999px;
+    background: rgba(148,163,184,0.25);
+    backdrop-filter: blur(6px);
+    border: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  /* ===== SLIDE MENU ===== */
+  .admin-mobile-menu {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    right: -100%;
+    width: 78%;
+    max-width: 310px;
+    height: 100vh;
+    background: #020617;
+    border-left: 1px solid rgba(148,163,184,0.35);
+    padding: 20px 18px;
+    gap: 12px;
+    transition: right 0.25s ease-in-out;
+    z-index: 60;
+  }
+
+  .admin-mobile-menu.is-open {
+    right: 0;
+  }
+
+  .admin-mobile-menu-close {
+    align-self: flex-end;
+    font-size: 32px;
+    cursor: pointer;
+    margin-bottom: 4px;
+    color: #e5e7eb;
+  }
+
+  .admin-mobile-userbox {
+    text-align: center;
+  
+  }
+
+  .admin-mobile-userbox .avatar-big {
+    width: 76px;
+    height: 76px;
+    border-radius: 999px;
+    border: 2px solid #38bdf8;
+    object-fit: cover;
+    margin: 0 auto 8px;
+  }
+
+  .admin-mobile-userbox .name {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  .admin-mobile-userbox .email {
+    font-size: 13px;
+    color: #9ca3af;
+  }
+
+  .admin-mobile-menu .admin-menu__link {
+    padding: 10px 12px;
+    font-size: 14px;
+    border-radius: 999px;
+    margin-bottom: 6px;
+    border: 1px solid transparent;
+  }
+
+  .admin-mobile-menu .admin-menu__link:hover {
+    background: rgba(30,41,59,0.8);
+    border-color: rgba(148,163,184,0.5);
+  }
+}
+
+/* ===========================
+   🔥 TABBAR MOBILE (<=768px)
+   =========================== */
+@media (max-width: 768px) {
+
+  .admin-tabbar {
+    display: flex !important;
+    justify-content: space-around;
+    align-items: center;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 58px;
+    background: #0f172a;
+    border-top: 1px solid rgba(148,163,184,0.3);
+    z-index: 70;
+  }
+
+  .admin-tabbar-item {
+    text-align: center;
+    font-size: 12px;
+    color: #cbd5f5;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .admin-tabbar-item svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .admin-tabbar-item.active {
+    color: #38bdf8;
+  }
+
+  /* chừa không gian tabbar */
+  .admin-main {
+    padding-bottom: 80px !important;
+  }
+}
+
+/* ===========================
+   🔥 MOBILE SMALL (<=480px)
+   =========================== */
+@media (max-width: 480px) {
+  .admin-mobile-avatar img {
+    width: 34px;
+    height: 34px;
+  }
+
+  .admin-main {
+    padding: 65px 10px 85px !important;
+  }
+}
+/* ======= CHUẨN HOÁ TẤT CẢ TRANG ADMIN GIỐNG DANH MỤC ======= */
+
+.admin-page {
+  padding: 16px 0 40px;
+}
+
+.admin-title {
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: #fff;
+}
+
+/* KHUNG CARD */
+.admin-card {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  box-shadow: 0px 0px 16px rgba(0, 140, 255, 0.15);
+  border-radius: 18px;
+  padding: 20px;
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 20px;
+}
+
+/* BẢNG CHUẨN */
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.admin-table th {
+  font-weight: 600;
+  color: #fff;
+}
+
+.admin-table td {
+  color: #d4d4d4;
+}
+
+.admin-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* SCROLL HÀNG NGANG CHO MOBILE */
+.admin-card::-webkit-scrollbar {
+  height: 6px;
+}
+
+.admin-card::-webkit-scrollbar-thumb {
+  background: #3b82f6;
+  border-radius: 4px;
+}
+/* ==========================
+   TỐI ƯU MENU ADMIN
+   ========================== */
+
+.admin-sidebar__group {
+  margin-bottom: 10px !important;
+}
+
+.admin-menu__link {
+  padding: 6px 12px !important;
+  line-height: 1.2 !important;
+  margin: 2px 0 !important;
+  font-size: 14px !important;
+}
+
+.admin-menu__title {
+  margin: 8px 0 4px !important;
+  font-size: 13px !important;
+  opacity: 0.8;
+}
+
+/* MOBILE SLIDE MENU */
+.admin-mobile-menu .admin-menu__link {
+  padding: 5px 14px !important;
+  font-size: 15px !important;
+  line-height: 1.3 !important;
+}
+/* FIX: Avatar mobile không được nằm đè lên menu slide */
+.admin-mobile-topbar,
+.admin-mobile-avatar {
+    z-index: 60 !important;
+}
+
+.admin-mobile-menu {
+    z-index: 200 !important; /* đảm bảo menu > avatar */
+    position: fixed;
+}
+
+
+.admin-badge-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  background: #ff4747;
+  border-radius: 50%;
+  margin-left: 8px;
+}
+.admin-noti-badge {
+  background: #ff3b30;
+  color: white;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 12px;
+  margin-left: 8px;
+  font-weight: bold;
+}
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 20000;
+}
+
+.modal-box {
+  background: #111827;
+  padding: 24px;
+  border-radius: 12px;
+  width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  color: #fff;
+}
+
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  background: transparent;
+  border: none;
+  font-size: 26px;
+  color: #aaa;
+  cursor: pointer;
+}
+
+.cccd-preview-wrapper {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.cccd-large {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #333;
+}
+
+.modal-actions {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: #00000088;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.modal-box {
+  background: #111827;
+  padding: 25px;
+  border-radius: 12px;
+  width: 680px;
+  max-height: 90vh;
+  overflow-y: auto;
+  color: white;
+  box-shadow: 0 0 15px #0005;
 }

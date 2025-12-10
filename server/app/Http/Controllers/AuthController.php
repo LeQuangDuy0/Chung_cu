@@ -47,6 +47,8 @@ class AuthController extends Controller
                 'type' => 'user_registered',
                 'content' => 'Người dùng mới đăng ký: ' . $user->name . ' (' . $user->email . ')',
             ]);
+
+
         }
 
         return response()->json([
@@ -83,7 +85,7 @@ class AuthController extends Controller
                 'message' => 'Email hoặc mật khẩu không đúng',
             ], 401);
         }
- $user->load('avatarFile');
+        $user->load('avatarFile');
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([

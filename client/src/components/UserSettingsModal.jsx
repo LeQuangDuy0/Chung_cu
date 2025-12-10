@@ -1,343 +1,474 @@
-// src/components/UserSettingsModal.jsx
-import { useEffect, useState } from 'react'
+import { useEffect, useState } from "react"
 
 export default function UserSettingsModal({ user, onClose, onUpdated }) {
+
+  const [stage, setStage] = useState("main")
+
   const [form, setForm] = useState({
-    name: user?.name || '',
-    email: user?.email || '',
-    phone_number: user?.phone_number || '',
-    current_password: '',            // mật khẩu hiện tại
-    new_password: '',                // mật khẩu mới
-    new_password_confirmation: '',   // nhập lại mật khẩu mới
+    name: user?.name || "",
+    email: user?.email || "",
+    phone_number: user?.phone_number || "",
+    current_password: "",
+    new_password: "",
+    new_password_confirmation: "",
   })
 
   const [avatarFile, setAvatarFile] = useState(null)
   const [avatarPreview, setAvatarPreview] = useState(user?.avatar_url || null)
 
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
+  // FORM NÂNG CẤP LESSOR (ép người dùng tự điền)
+  const [lessorForm, setLessorForm] = useState({
+    full_name: "",
+    email: "",
+    phone_number: "",
+    date_of_birth: "",
+  })
 
-  // khoá scroll body khi mở
+  const [cccdFront, setCccdFront] = useState(null)
+  const [cccdBack, setCccdBack] = useState(null)
+
+  const today = new Date()
+const year = today.getFullYear() - 18
+const month = String(today.getMonth() + 1).padStart(2, "0")
+const day = String(today.getDate()).padStart(2, "0")
+
+// ngày lớn nhất được phép chọn = hôm nay - 18 tuổi
+const maxBirthDate = `${year}-${month}-${day}`
+
+
+  const [previewImage, setPreviewImage] = useState(null)
+
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
+
+  // Lock scroll
   useEffect(() => {
     const old = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = old
-    }
+    document.body.style.overflow = "hidden"
+    return () => { document.body.style.overflow = old }
   }, [])
 
-  const handleOverlayClick = (e) => {
-    if (e.target.classList.contains('settings-overlay')) {
-      onClose()
-    }
+  // Change basic input
+  const handleChange = e => {
+    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
-  const handleChange = (e) => {
-    const { name, value } = e.target
-    setForm((prev) => ({ ...prev, [name]: value }))
-  }
-
-  const handleAvatarChange = (e) => {
+  // Change Avatar
+  const handleAvatarChange = e => {
     const file = e.target.files?.[0]
     if (!file) return
     setAvatarFile(file)
     setAvatarPreview(URL.createObjectURL(file))
+    setStage("avatar")
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setError('')
-    setSuccess('')
+  // ===============================
+  // GỬI YÊU CẦU NÂNG CẤP LESSOR
+  // ===============================
+  const handleRequestLessor = async () => {
+    setError("")
+    setSuccess("")
 
-    // Nếu user muốn đổi mật khẩu
-    const wantChangePassword =
-      form.current_password || form.new_password || form.new_password_confirmation
+    const token = localStorage.getItem("access_token")
+    if (!token) return setError("Bạn chưa đăng nhập.")
 
-    if (wantChangePassword) {
-      if (!form.current_password) {
-        setError('Vui lòng nhập mật khẩu hiện tại.')
-        return
-      }
-      if (!form.new_password || form.new_password.length < 6) {
-        setError('Mật khẩu mới phải có ít nhất 6 ký tự.')
-        return
-      }
-      if (form.new_password !== form.new_password_confirmation) {
-        setError('Mật khẩu xác nhận không khớp.')
-        return
-      }
+    if (!lessorForm.full_name || !lessorForm.email || !lessorForm.phone_number || !lessorForm.date_of_birth) {
+      return setError("Vui lòng nhập đầy đủ thông tin.")
+    }
+
+    if (!cccdFront || !cccdBack) {
+      return setError("Vui lòng tải lên đầy đủ ảnh CCCD mặt trước và mặt sau.")
     }
 
     try {
       setLoading(true)
 
-      const token = localStorage.getItem('access_token')
-      if (!token) throw new Error('Bạn chưa đăng nhập.')
+      const fd = new FormData()
+      fd.append("full_name", lessorForm.full_name)
+      fd.append("email", lessorForm.email)
+      fd.append("phone_number", lessorForm.phone_number)
+      fd.append("date_of_birth", lessorForm.date_of_birth)
+      fd.append("cccd_front", cccdFront)
+      fd.append("cccd_back", cccdBack)
 
-      const authHeaders = {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
-      }
-      const jsonHeaders = {
-        ...authHeaders,
-        'Content-Type': 'application/json',
-      }
-
-      let updatedUser = user
-
-      /** 1. Cập nhật thông tin cơ bản: name, email, phone_number */
-      const resProfile = await fetch('/api/user/profile', {
-        method: 'PUT',
-        headers: jsonHeaders,
-        body: JSON.stringify({
-          name: form.name,
-          email: form.email,
-          phone_number: form.phone_number,
-        }),
+      const res = await fetch("/api/user/request-lessor", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd
       })
 
-      const textProfile = await resProfile.text()
-      let dataProfile
-      try {
-        dataProfile = JSON.parse(textProfile)
-      } catch {
-        throw new Error('Máy chủ (profile) trả về dữ liệu không hợp lệ.')
+      const data = await res.json()
+
+      if (!res.ok || data.status === false) {
+        throw new Error(data.message || "Không thể gửi yêu cầu.")
       }
 
-      if (!resProfile.ok || dataProfile.status === false) {
-        if (resProfile.status === 422 && dataProfile.errors) {
-          const firstError =
-            Object.values(dataProfile.errors)[0]?.[0] ||
-            'Lỗi xác thực dữ liệu khi cập nhật thông tin.'
-          throw new Error(firstError)
-        }
-        throw new Error(dataProfile.message || 'Cập nhật thông tin thất bại.')
-      }
+      setSuccess("Gửi yêu cầu thành công! Vui lòng chờ admin duyệt.")
+   onClose();
+window.location.reload();
 
-      const userFromProfile = dataProfile.data || dataProfile.user || updatedUser
-      updatedUser = { ...updatedUser, ...userFromProfile }
-
-      /** 2. Nếu có chọn avatar thì gọi API upload avatar riêng */
-      if (avatarFile) {
-        const formData = new FormData()
-        formData.append('avatar', avatarFile)
-
-        const resAvatar = await fetch('/api/user/profile/avatar', {
-          method: 'POST',
-          headers: authHeaders,
-          body: formData,
-        })
-
-        const textAvatar = await resAvatar.text()
-        let dataAvatar
-        try {
-          dataAvatar = JSON.parse(textAvatar)
-        } catch {
-          throw new Error('Máy chủ (avatar) trả về dữ liệu không hợp lệ.')
-        }
-
-        if (!resAvatar.ok || dataAvatar.status === false) {
-          if (resAvatar.status === 422 && dataAvatar.errors) {
-            const firstError =
-              Object.values(dataAvatar.errors)[0]?.[0] ||
-              'Lỗi xác thực dữ liệu khi cập nhật avatar.'
-            throw new Error(firstError)
-          }
-          throw new Error(dataAvatar.message || 'Cập nhật avatar thất bại.')
-        }
-        const userFromAvatar =
-          dataAvatar.user || dataAvatar.data || updatedUser
-
-        updatedUser = { ...updatedUser, ...userFromAvatar }
-        setAvatarPreview(userFromAvatar.avatar_url || avatarPreview)
-
-        const avatarUrl =
-          dataAvatar.avatar_url ||
-          dataAvatar.data?.avatar_url ||
-          updatedUser.avatar_url
-
-        updatedUser = { ...updatedUser, avatar_url: avatarUrl }
-      }
-
-      /** 3. Nếu có nhập mật khẩu → gọi API đổi mật khẩu */
-      if (wantChangePassword) {
-        const resPwd = await fetch('/api/user/change-password', {
-          method: 'PUT',
-          headers: jsonHeaders,
-          body: JSON.stringify({
-            current_password: form.current_password,
-            new_password: form.new_password,
-            new_password_confirmation: form.new_password_confirmation,
-          }),
-        })
-
-        const textPwd = await resPwd.text()
-        let dataPwd
-        try {
-          dataPwd = JSON.parse(textPwd)
-        } catch {
-          throw new Error('Máy chủ (password) trả về dữ liệu không hợp lệ.')
-        }
-
-        if (!resPwd.ok || dataPwd.status === false) {
-          if (resPwd.status === 422 && dataPwd.errors) {
-            const firstError =
-              Object.values(dataPwd.errors)[0]?.[0] ||
-              'Lỗi xác thực dữ liệu khi đổi mật khẩu.'
-            throw new Error(firstError)
-          }
-          throw new Error(
-            dataPwd.message || 'Đổi mật khẩu thất bại. Vui lòng thử lại.'
-          )
-        }
-      }
-
-      setSuccess('Cập nhật tài khoản thành công.')
-      onUpdated(updatedUser)
-
-      setTimeout(() => {
-        onClose()
-      }, 800)
     } catch (err) {
-      console.error(err)
-      setError(err.message || 'Có lỗi xảy ra, vui lòng thử lại.')
+      setError(err.message)
     } finally {
       setLoading(false)
     }
   }
 
-  return (
-    <div className="settings-overlay" onClick={handleOverlayClick}>
-      <div className="settings-overlay__inner">
-        <section className="settings-card">
-          {/* nút X */}
-          <button
-            type="button"
-            className="settings-close"
-            onClick={onClose}
-          >
-            ×
-          </button>
+  // ===============================
+  // SUBMIT ĐỔI PROFILE / PASSWORD
+  // ===============================
+  const handleSubmit = async e => {
+    e.preventDefault()
+    setError("")
+    setSuccess("")
 
-          <h2 className="settings-title">Cài đặt tài khoản</h2>
-          <p className="settings-sub">
-            Bạn có thể đổi thông tin cá nhân, mật khẩu và ảnh đại diện tại đây.
-          </p>
+    const token = localStorage.getItem("access_token")
+    if (!token) return setError("Bạn chưa đăng nhập.")
 
-          <form className="settings-form" onSubmit={handleSubmit}>
-            {/* Avatar */}
-            <div className="settings-avatar-block">
-              <div className="settings-avatar-preview">
-                {avatarPreview ? (
-                  <img src={avatarPreview} alt="Avatar" />
-                ) : (
-                  <span>{user?.name?.charAt(0)?.toUpperCase() || 'U'}</span>
-                )}
-              </div>
-              <label className="settings-avatar-btn">
-                Đổi ảnh đại diện
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarChange}
-                  style={{ display: 'none' }}
-                />
-              </label>
-            </div>
+    const basicInfoChanged =
+      form.name !== user.name ||
+      form.email !== user.email ||
+      form.phone_number !== user.phone_number ||
+      avatarFile !== null
 
-            {/* Tên */}
-            <label className="settings-field">
-              <span>Họ và tên</span>
-              <input
-                type="text"
-                name="name"
-                value={form.name}
-                onChange={handleChange}
-              />
-            </label>
+    const wantChangePassword =
+      form.new_password || form.new_password_confirmation
 
-            {/* Email */}
-            <label className="settings-field">
-              <span>Email</span>
-              <input
-                type="email"
-                name="email"
-                value={form.email}
-                onChange={handleChange}
-              />
-            </label>
+    if ((basicInfoChanged || wantChangePassword) && !form.current_password) {
+      return setError("Vui lòng nhập mật khẩu hiện tại để xác nhận.")
+    }
 
-            {/* Số điện thoại */}
-            <label className="settings-field">
-              <span>Số điện thoại</span>
-              <input
-                type="text"
-                name="phone_number"
-                value={form.phone_number}
-                onChange={handleChange}
-              />
-            </label>
+    if (wantChangePassword) {
+      if (form.new_password.length < 6) {
+        return setError("Mật khẩu mới phải có ít nhất 6 ký tự.")
+      }
+      if (form.new_password !== form.new_password_confirmation) {
+        return setError("Mật khẩu xác nhận không khớp.")
+      }
+    }
 
-            {/* Nhóm mật khẩu */}
-            <div className="settings-field-group">
-              <label className="settings-field">
-                <span>Mật khẩu hiện tại</span>
-                <input
-                  type="password"
-                  name="current_password"
-                  value={form.current_password}
-                  onChange={handleChange}
-                  placeholder="Nhập mật khẩu hiện tại nếu muốn đổi"
-                />
-              </label>
+    try {
+      setLoading(true)
+      let updatedUser = user
 
-              <label className="settings-field">
-                <span>Mật khẩu mới (tuỳ chọn)</span>
-                <input
-                  type="password"
-                  name="new_password"
-                  value={form.new_password}
-                  onChange={handleChange}
-                  placeholder="Để trống nếu không đổi"
-                />
-              </label>
+      const authHeaders = {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      }
 
-              <label className="settings-field">
-                <span>Nhập lại mật khẩu mới</span>
-                <input
-                  type="password"
-                  name="new_password_confirmation"
-                  value={form.new_password_confirmation}
-                  onChange={handleChange}
-                  placeholder="Nhập lại mật khẩu mới"
-                />
-              </label>
-            </div>
+      const jsonHeaders = {
+        ...authHeaders,
+        "Content-Type": "application/json",
+      }
 
-            {error && <p className="settings-error">{error}</p>}
-            {success && <p className="settings-success">{success}</p>}
+      // UPDATE PROFILE
+      if (basicInfoChanged) {
+        const res = await fetch("/api/user/profile", {
+          method: "PUT",
+          headers: jsonHeaders,
+          body: JSON.stringify({
+            name: form.name,
+            email: form.email,
+            phone_number: form.phone_number,
+            current_password: form.current_password,
+          })
+        })
 
-            <div className="settings-actions">
-              <button
-                type="button"
-                className="settings-btn settings-btn--ghost"
-                onClick={onClose}
-                disabled={loading}
-              >
-                Hủy
-              </button>
-              <button
-                type="submit"
-                className="settings-btn settings-btn--primary"
-                disabled={loading}
-              >
-                {loading ? 'Đang lưu...' : 'Lưu thay đổi'}
-              </button>
-            </div>
-          </form>
-        </section>
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.message)
+
+        updatedUser = { ...updatedUser, ...(data.data || {}) }
+      }
+
+      // UPDATE AVATAR
+      if (avatarFile) {
+        const fd = new FormData()
+        fd.append("avatar", avatarFile)
+        fd.append("current_password", form.current_password)
+
+        const res = await fetch("/api/user/profile/avatar", {
+          method: "POST",
+          headers: authHeaders,
+          body: fd
+        })
+
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.message)
+
+        updatedUser.avatar_url = data.avatar_url
+      }
+
+      // CHANGE PASSWORD
+      if (wantChangePassword) {
+        const res = await fetch("/api/user/change-password", {
+          method: "PUT",
+          headers: jsonHeaders,
+          body: JSON.stringify({
+            current_password: form.current_password,
+            new_password: form.new_password,
+            new_password_confirmation: form.new_password_confirmation,
+          })
+        })
+
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.message)
+      }
+
+      setSuccess("Cập nhật thành công!")
+      onUpdated(updatedUser)
+      setTimeout(() => onClose(), 700)
+
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // ============================
+  // RENDER FORM LESSOR
+  // ============================
+  const renderLessorForm = () => (
+    <form className="settings-form" onSubmit={(e) => { 
+    e.preventDefault(); 
+    handleRequestLessor(); 
+  }}>
+    
+    <h2 className="settings-title">Yêu cầu quyền đăng bài</h2>
+
+    {/* Họ tên */}
+    <label>Họ và tên *</label>
+    <input
+      value={lessorForm.full_name}
+      onChange={e => setLessorForm({ ...lessorForm, full_name: e.target.value })}
+      placeholder="Nhập họ và tên"
+    />
+
+    {/* Email */}
+    <label>Email *</label>
+    <input
+      value={lessorForm.email}
+      onChange={e => setLessorForm({ ...lessorForm, email: e.target.value })}
+      placeholder="Nhập email"
+    />
+
+    {/* 2 cột: SĐT + Ngày sinh */}
+    <div className="two-col">
+      <div>
+        <label>Số điện thoại *</label>
+        <input
+          value={lessorForm.phone_number}
+          onChange={e => setLessorForm({ ...lessorForm, phone_number: e.target.value })}
+          placeholder="VD: 0987654321"
+        />
+      </div>
+
+      <div>
+        <label>Ngày sinh *</label>
+      <input
+  type="date"
+  value={lessorForm.date_of_birth}
+  max={maxBirthDate}   // không được lớn hơn ngày hiện tại - 18 tuổi
+  min="1900-01-01"
+  onChange={e => setLessorForm({ ...lessorForm, date_of_birth: e.target.value })}
+/>
+
       </div>
     </div>
+
+    {/* Ảnh CCCD */}
+    <label>Ảnh CCCD *</label>
+
+    <div className="cccd-box-row">
+
+      {/* Mặt trước */}
+      <div className="cccd-box">
+        {cccdFront ? (
+          <img 
+            src={URL.createObjectURL(cccdFront)}
+            className="cccd-img"
+            onClick={() => setPreviewImage(URL.createObjectURL(cccdFront))}
+          />
+        ) : (
+          <div className="cccd-placeholder">Mặt trước</div>
+        )}
+
+        <input 
+          type="file" 
+          accept="image/*"
+          onChange={(e) => {
+            const f = e.target.files[0];
+            setCccdFront(f);
+          }}
+        />
+      </div>
+
+      {/* Mặt sau */}
+      <div className="cccd-box">
+        {cccdBack ? (
+          <img 
+            src={URL.createObjectURL(cccdBack)}
+            className="cccd-img"
+            onClick={() => setPreviewImage(URL.createObjectURL(cccdBack))}
+          />
+        ) : (
+          <div className="cccd-placeholder">Mặt sau</div>
+        )}
+
+        <input 
+          type="file" 
+          accept="image/*"
+          onChange={(e) => {
+            const f = e.target.files[0];
+            setCccdBack(f);
+          }}
+        />
+      </div>
+
+    </div>
+
+    {error && <p className="settings-error">{error}</p>}
+    {success && <p className="settings-success">{success}</p>}
+
+    <div className="settings-actions">
+      <button type="button" className="settings-btn settings-btn--ghost" onClick={() => setStage("main")}>
+        Hủy
+      </button>
+      <button type="submit" className="settings-btn settings-btn--primary">
+        {loading ? "Đang gửi..." : "Gửi yêu cầu"}
+      </button>
+    </div>
+
+    {/* FULLSCREEN PREVIEW */}
+    {previewImage && (
+      <div className="preview-overlay" onClick={() => setPreviewImage(null)}>
+        <img src={previewImage} className="preview-full" />
+      </div>
+    )}
+  </form>
   )
+
+  // ============================
+  // OTHER FORMS (INFO / PASS / AVATAR)
+  // ============================
+  const renderMain = () => (
+    <>
+      <h2 className="settings-title">Cài đặt tài khoản</h2>
+
+      <div className="settings-main-grid">
+        <button className="settings-main-btn" onClick={() => setStage("info")}>✏ Đổi thông tin cá nhân</button>
+        <button className="settings-main-btn" onClick={() => setStage("password")}>🔒 Đổi mật khẩu</button>
+        <button className="settings-main-btn" onClick={() => setStage("avatar")}>🖼 Đổi ảnh đại diện</button>
+        {user.role === "user" && (
+          <button className="settings-main-btn" onClick={() => setStage("lessor")}>⭐ Yêu cầu nâng cấp lên Lessor</button>
+        )}
+      </div>
+
+      <button className="settings-btn settings-btn--ghost mt-20" onClick={onClose}>Đóng</button>
+    </>
+  )
+
+  const renderInfoForm = () => (
+    <form className="settings-form" onSubmit={handleSubmit}>
+      <h2 className="settings-title">Đổi thông tin cá nhân</h2>
+
+      <label>Họ và tên</label>
+      <input name="name" value={form.name} onChange={handleChange} />
+
+      <label>Email</label>
+      <input name="email" value={form.email} onChange={handleChange} />
+
+      <label>Số điện thoại</label>
+      <input name="phone_number" value={form.phone_number} onChange={handleChange} />
+
+      <label>Mật khẩu hiện tại *</label>
+      <input type="password" name="current_password" value={form.current_password} onChange={handleChange} />
+
+      {error && <p className="settings-error">{error}</p>}
+      {success && <p className="settings-success">{success}</p>}
+
+      <div className="settings-actions">
+        <button type="button" className="settings-btn settings-btn--ghost" onClick={() => setStage("main")}>Hủy</button>
+        <button type="submit" className="settings-btn settings-btn--primary">
+          {loading ? "Đang lưu..." : "Lưu thay đổi"}
+        </button>
+      </div>
+    </form>
+  )
+
+  const renderPasswordForm = () => (
+    <form className="settings-form" onSubmit={handleSubmit}>
+      <h2 className="settings-title">Đổi mật khẩu</h2>
+
+      <label>Mật khẩu hiện tại *</label>
+      <input type="password" name="current_password" value={form.current_password} onChange={handleChange} />
+
+      <label>Mật khẩu mới</label>
+      <input type="password" name="new_password" value={form.new_password} onChange={handleChange} />
+
+      <label>Nhập lại mật khẩu mới</label>
+      <input type="password" name="new_password_confirmation" value={form.new_password_confirmation} onChange={handleChange} />
+
+      {error && <p className="settings-error">{error}</p>}
+      {success && <p className="settings-success">{success}</p>}
+
+      <div className="settings-actions">
+        <button type="button" className="settings-btn settings-btn--ghost" onClick={() => setStage("main")}>Hủy</button>
+        <button type="submit" className="settings-btn settings-btn--primary">
+          {loading ? "Đang lưu..." : "Đổi mật khẩu"}
+        </button>
+      </div>
+    </form>
+  )
+
+  const renderAvatarForm = () => (
+    <form className="settings-form" onSubmit={handleSubmit}>
+      <h2 className="settings-title">Đổi ảnh đại diện</h2>
+
+      <div className="avatar-preview-large">
+        {avatarPreview ? <img src={avatarPreview} /> : "Chưa có avatar"}
+      </div>
+
+      <input type="file" accept="image/*" onChange={handleAvatarChange} />
+
+      <label>Mật khẩu hiện tại *</label>
+      <input type="password" name="current_password" value={form.current_password} onChange={handleChange} />
+
+      {error && <p className="settings-error">{error}</p>}
+      {success && <p className="settings-success">{success}</p>}
+
+      <div className="settings-actions">
+        <button type="button" className="settings-btn settings-btn--ghost" onClick={() => setStage("main")}>Hủy</button>
+        <button type="submit" className="settings-btn settings-btn--primary">
+          {loading ? "Đang lưu..." : "Cập nhật avatar"}
+        </button>
+      </div>
+    </form>
+  )
+
+
+  // ============================
+  // RETURN UI
+  // ============================
+ return (
+  <div className="settings-overlay">
+    <div className="settings-overlay__inner">
+
+      <section className="settings-card">
+
+        <button className="settings-close" onClick={onClose}>×</button>
+
+        {stage === "main" && renderMain()}
+        {stage === "info" && renderInfoForm()}
+        {stage === "password" && renderPasswordForm()}
+        {stage === "avatar" && renderAvatarForm()}
+        {stage === "lessor" && renderLessorForm()}
+
+      </section>
+
+    </div>
+  </div>
+)
+
 }

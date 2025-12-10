@@ -1,0 +1,297 @@
+/* =========================
+   OVERLAY
+========================= */
+.settings-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  z-index: 99999;
+}
+
+/* =========================
+   CARD WRAPPER
+========================= */
+.settings-overlay__inner {
+  width: 100%;
+  max-width: 720px;
+}
+
+/* =========================
+   CARD
+========================= */
+.settings-card {
+  background: #111827;
+  border-radius: 16px;
+  padding: 32px;
+  position: relative;
+  color: #fff;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.45);
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+/* Scroll mượt */
+.settings-card::-webkit-scrollbar {
+  width: 6px;
+}
+.settings-card::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 8px;
+}
+
+/* =========================
+   CLOSE BUTTON
+========================= */
+.settings-close {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  background: transparent;
+  border: none;
+  color: #bbb;
+  font-size: 26px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+.settings-close:hover {
+  color: #fff;
+  transform: scale(1.1);
+}
+
+/* =========================
+   TITLES
+========================= */
+.settings-title {
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+/* =========================
+   MAIN GRID
+========================= */
+.settings-main-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.settings-main-btn {
+  background: #1a2234;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+  font-size: 16px;
+  color: #fff;
+  cursor: pointer;
+  text-align: left;
+  transition: 0.2s;
+}
+.settings-main-btn:hover {
+  background: #263048;
+  transform: translateY(-2px);
+}
+
+/* =========================
+   FORM
+========================= */
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.settings-form label {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.settings-form input,
+.settings-form textarea {
+  margin-top: 6px;
+  padding: 12px 14px;
+  background: #0f1622;
+  border: 1px solid #2b3242;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 15px;
+  transition: 0.2s;
+}
+
+.settings-form input:focus,
+.settings-form textarea:focus {
+  border-color: #3b82f6;
+  background: #111a29;
+  outline: none;
+}
+
+/* =========================
+   AVATAR PREVIEW
+========================= */
+.avatar-preview-large {
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin-bottom: 16px;
+  border: 2px solid rgba(255,255,255,0.1);
+}
+.avatar-preview-large img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* =========================
+   LESSOR CCCD PREVIEW
+========================= */
+.cccd-preview-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.cccd-preview {
+  width: 110px;
+  height: 70px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 2px solid #4b5563;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.cccd-preview:hover {
+  border-color: #16a34a;
+  transform: scale(1.05);
+}
+
+/* =========================
+   FULL IMAGE PREVIEW
+========================= */
+.preview-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999999;
+}
+
+.preview-full {
+  max-width: 90%;
+  max-height: 90%;
+  border-radius: 8px;
+}
+
+/* =========================
+   BUTTONS
+========================= */
+.settings-actions {
+  margin-top: 8px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.settings-btn {
+  padding: 12px 20px;
+  border-radius: 10px;
+  border: none;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.settings-btn--ghost {
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+}
+.settings-btn--ghost:hover {
+  background: rgba(255,255,255,0.18);
+}
+
+.settings-btn--primary {
+  background: #22c55e;
+  color: #fff;
+  font-weight: 600;
+  transition: 0.2s;
+}
+.settings-btn--primary:hover {
+  background: #16a34a;
+  transform: translateY(-2px);
+}
+
+/* =========================
+   MESSAGE STATUS
+========================= */
+.settings-error {
+  color: #ff6b6b;
+  font-size: 14px;
+}
+
+.settings-success {
+  color: #10b981;
+  font-size: 14px;
+}
+/* ==== TWO COLUMNS (SĐT + Ngày sinh) ==== */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* === CCCD KHUNG ẢNH === */
+.cccd-box-row {
+  display: flex;
+  gap: 16px;
+  margin-top: 6px;
+}
+
+.cccd-box {
+  flex: 1;
+  height: 120px;
+  background: #0f1622;
+  border: 1px solid #2b3242;
+  border-radius: 10px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* placeholder khi chưa có ảnh */
+.cccd-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #aaa;
+  font-size: 14px;
+}
+
+/* ảnh sau khi chọn */
+.cccd-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.cccd-img:hover {
+  transform: scale(1.03);
+}
+
+/* input file nằm nổi, nhưng ẩn */
+.cccd-box input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}

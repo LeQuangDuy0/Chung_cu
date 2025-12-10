@@ -2,18 +2,28 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Notification extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'user_id',
+        'title',
+        'body',
+        'content',     // ✔ THÊM – KHỚP DB
         'type',
-        'content',
-        'is_read'
+        'data',
+        'is_read',     // ✔ THÊM – KHỚP DB
     ];
 
-    // Thông báo thuộc về 1 user
+    protected $casts = [
+        'data'    => 'array',
+        'read_at' => 'datetime',
+    ];
+
     public function user()
     {
         return $this->belongsTo(User::class);

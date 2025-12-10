@@ -10,16 +10,13 @@ import { Heart } from 'lucide-react';
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api'
 
+// Safe JSON
 async function safeJson(res) {
   const text = await res.text()
   try {
     return JSON.parse(text)
   } catch {
-    console.warn(
-      'Header: phản hồi không phải JSON',
-      res.url,
-      text.slice(0, 120),
-    )
+    console.warn('Header: phản hồi không phải JSON:', res.url, text.slice(0, 120))
     return null
   }
 }
@@ -30,18 +27,18 @@ export default function Header() {
   const [showSettings, setShowSettings] = useState(false)
 
   const [user, setUser] = useState(null)
-  const [indicatorStyle, setIndicatorStyle] = useState({})
-  const [menuOpen, setMenuOpen] = useState(false) // dropdown avatar (desktop)
-  const [drawerOpen, setDrawerOpen] = useState(false) // menu mobile
-
-  // ====== WISHLIST ======
   const [wishlistCount, setWishlistCount] = useState(0)
 
-  // ====== ADMIN NOTIFICATIONS ======
-  const [hasAdminNotifications, setHasAdminNotifications] = useState(false)
+  // 🔥 COUNT NOTIFICATION
+  const [unreadAdmin, setUnreadAdmin] = useState(0)
 
-  // danh sách 4 category hiển thị trên menu
+  // 🔥 STAGE BADGE (avatar → menu → sidebar)
+  const [notiStage, setNotiStage] = useState("avatar")
+
   const [navCategories, setNavCategories] = useState([])
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [indicatorStyle, setIndicatorStyle] = useState({})
 
   const navRef = useRef(null)
   const userMenuRef = useRef(null)
@@ -54,7 +51,7 @@ export default function Header() {
   const drawerNavClass = ({ isActive }) =>
     'header-drawer__link' + (isActive ? ' active' : '')
 
-  // ===== Hiệu ứng viên thuốc nav (desktop) =====
+  // ================= NAV indicator =================
   useEffect(() => {
     const navEl = navRef.current
     if (!navEl) return
@@ -78,56 +75,42 @@ export default function Header() {
     })
   }, [location.pathname])
 
-  // đóng drawer mỗi khi đổi route
-  useEffect(() => {
-    setDrawerOpen(false)
-  }, [location.pathname])
+  useEffect(() => setDrawerOpen(false), [location.pathname])
 
-  // ===== Lấy categories cho menu =====
+  // ================= LOAD CATEGORIES =================
   useEffect(() => {
     ;(async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/categories`, {
-          headers: { Accept: 'application/json' },
-        })
+        const res = await fetch(`${API_BASE_URL}/categories`)
         const data = await safeJson(res)
+
         if (!res.ok) return
 
         let list = data?.data || data || []
-        if (!Array.isArray(list)) list = []
+        list = Array.isArray(list) ? list : []
 
-        list = [...list].sort((a, b) => Number(a.id) - Number(b.id))
+        list = list.sort((a, b) => Number(a.id) - Number(b.id))
         setNavCategories(list.slice(0, 4))
-      } catch (e) {
-        console.error('Header: lỗi load categories cho menu:', e)
-      }
+      } catch {}
     })()
   }, [])
 
-  // ===== Hàm lấy user từ API khi chỉ có token =====
+  // ================= LOAD USER =================
   const fetchUserFromApi = async token => {
     try {
       const res = await fetch('/api/user', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json',
-        },
+        headers: { Authorization: `Bearer ${token}` },
       })
-
-      if (!res.ok) throw new Error('Không lấy được thông tin user')
-
       const data = await res.json()
       const u = data.user || data.data || data
 
       setUser(u)
       localStorage.setItem('auth_user', JSON.stringify(u))
-    } catch (e) {
-      console.error('Lỗi fetch user từ /api/user:', e)
+    } catch {
       setUser(null)
     }
   }
 
-  // ===== Đọc user từ localStorage + fallback gọi /api/user =====
   useEffect(() => {
     const initAuth = () => {
       const raw = localStorage.getItem('auth_user')
@@ -136,19 +119,13 @@ export default function Header() {
       if (raw) {
         try {
           let parsed = JSON.parse(raw)
-          if (parsed && parsed.user) parsed = parsed.user
-          setUser(parsed || null)
+          if (parsed?.user) parsed = parsed.user
+          setUser(parsed)
           return
-        } catch (e) {
-          console.error('parse auth_user error', e)
-        }
+        } catch {}
       }
-
-      if (token) {
-        fetchUserFromApi(token)
-      } else {
-        setUser(null)
-      }
+      if (token) fetchUserFromApi(token)
+      else setUser(null)
     }
 
     initAuth()
@@ -156,78 +133,97 @@ export default function Header() {
     return () => window.removeEventListener('auth:changed', initAuth)
   }, [])
 
-  // ====== INIT WISHLIST (localStorage + event) ======
+  // ================= LOAD WISHLIST =================
   useEffect(() => {
     const initWishlist = () => {
       try {
-        const raw = localStorage.getItem('wishlist_posts')
-        if (!raw) {
-          setWishlistCount(0)
+        const token = localStorage.getItem('access_token')
+
+        if (token && user) {
+          const loadFromAPI = async () => {
+            try {
+              const res = await fetch(`${API_BASE_URL}/saved-posts/ids`, {
+                headers: { Authorization: `Bearer ${token}` }
+              })
+              const data = await res.json()
+
+              if (data.status && Array.isArray(data.data)) {
+                setWishlistCount(data.data.length)
+                return
+              }
+            } catch {}
+
+            setWishlistCount(0)
+          }
+
+          loadFromAPI()
           return
         }
-        const parsed = JSON.parse(raw)
+
+        const raw = localStorage.getItem('wishlist_posts')
+        const parsed = raw ? JSON.parse(raw) : []
         setWishlistCount(Array.isArray(parsed) ? parsed.length : 0)
-      } catch (e) {
-        console.error('parse wishlist_posts error', e)
+      } catch {
         setWishlistCount(0)
       }
     }
 
     initWishlist()
     window.addEventListener('wishlist:changed', initWishlist)
-    return () =>
-      window.removeEventListener('wishlist:changed', initWishlist)
-  }, [])
+    return () => window.removeEventListener('wishlist:changed', initWishlist)
+  }, [user])
 
-  // ====== LOAD ADMIN NOTIFICATIONS ======
+  // ================= LOAD ADMIN NOTIFICATION =================
   useEffect(() => {
-    const loadAdminNotifications = async () => {
+    const loadUnread = async () => {
       if (!user || user.role !== 'admin') {
-        setHasAdminNotifications(false)
+        setUnreadAdmin(0)
         return
       }
 
       try {
-        const token = localStorage.getItem('auth_token')
+        const token = localStorage.getItem('access_token')
         if (!token) return
 
-        // Kiểm tra yêu cầu đăng bài
-        const postsRes = await fetch(`${API_BASE_URL}/admin/pending-posts`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/json',
-          },
+        const res = await fetch(`${API_BASE_URL}/notifications/unread-count`, {
+          headers: { Authorization: `Bearer ${token}` }
         })
-        const postsData = postsRes.ok ? await safeJson(postsRes) : null
-        const pendingPosts = Array.isArray(postsData?.data) ? postsData.data.length : 0
+        const data = await safeJson(res)
 
-        // Kiểm tra yêu cầu cấp quyền lessor
-        const lessorRes = await fetch(`${API_BASE_URL}/admin/pending-lessor`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/json',
-          },
-        })
-        const lessorData = lessorRes.ok ? await safeJson(lessorRes) : null
-        const pendingLessor = Array.isArray(lessorData?.data) ? lessorData.data.length : 0
-
-        // Có notification nếu có yêu cầu nào
-        setHasAdminNotifications(pendingPosts > 0 || pendingLessor > 0)
-      } catch (e) {
-        console.error('Header: lỗi load admin notifications:', e)
-        setHasAdminNotifications(false)
+        if (data?.status) setUnreadAdmin(data.unread)
+      } catch {
+        setUnreadAdmin(0)
       }
     }
 
-    loadAdminNotifications()
-
-    // Refresh mỗi 30 giây
-    const interval = setInterval(loadAdminNotifications, 30000)
+    loadUnread()
+    const interval = setInterval(loadUnread, 8000)
     return () => clearInterval(interval)
   }, [user])
 
+  // ================= BADGE LOGIC =================
 
-  // ===== Đóng dropdown khi click ngoài (desktop) =====
+  // 1. Bấm avatar → badge chuyển sang menu
+  const handleOpenMenu = () => {
+    setMenuOpen(prev => !prev)
+    if (unreadAdmin > 0) setNotiStage("menu")
+  }
+
+  // 2. Bấm "Khu vực quản trị"
+  const handleGoAdmin = () => {
+    if (unreadAdmin > 0) setNotiStage("sidebar")
+    navigate('/admin')
+    setMenuOpen(false)
+  }
+
+  // 3. Nếu rời admin mà chưa đọc → quay về avatar
+  useEffect(() => {
+    if (!location.pathname.startsWith("/admin") && notiStage === "sidebar") {
+      setNotiStage("avatar")
+    }
+  }, [location.pathname])
+
+  // ================= CLICK OUTSIDE =================
   useEffect(() => {
     if (!menuOpen) return
     const handleClick = e => {
@@ -239,7 +235,7 @@ export default function Header() {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [menuOpen])
 
-  // ===== Logout =====
+  // ================= LOGOUT =================
   const handleLogout = async () => {
     const token = localStorage.getItem('access_token')
 
@@ -247,56 +243,21 @@ export default function Header() {
       if (token) {
         await fetch('/api/logout', {
           method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/json',
-          },
+          headers: { Authorization: `Bearer ${token}` }
         })
       }
-    } catch (err) {
-      console.error('Logout error:', err)
-    } finally {
-      localStorage.removeItem('access_token')
-      localStorage.removeItem('auth_user')
-      // tuỳ anh: có thể clear luôn wishlist khi logout
-      // localStorage.removeItem('wishlist_posts')
-      setWishlistCount(0)
-      setUser(null)
-      window.dispatchEvent(new Event('auth:changed'))
-      setMenuOpen(false)
-      setDrawerOpen(false)
+    } catch {}
 
-      if (location.pathname.startsWith('/admin')) {
-        navigate('/')
-      }
-    }
+    localStorage.removeItem('access_token')
+    localStorage.removeItem('auth_user')
+    setWishlistCount(0)
+    setUser(null)
+    window.dispatchEvent(new Event('auth:changed'))
+
+    if (location.pathname.startsWith('/admin')) navigate('/')
   }
 
-  const openLogin = () => {
-    setDrawerOpen(false)
-    setShowRegister(false)
-    setShowLogin(true)
-  }
-
-  const openRegister = () => {
-    setDrawerOpen(false)
-    setShowLogin(false)
-    setShowRegister(true)
-  }
-
-  // ===== Mở trang yêu thích =====
-  const handleWishlistClick = () => {
-    if (!user) {
-      // chưa login -> bắt login trước
-      openLogin()
-      return
-    }
-    navigate('/wishlist')
-    setMenuOpen(false)
-    setDrawerOpen(false)
-  }
-
-  // ===== Avatar =====
+  // ================= AVATAR =================
   const avatarUrl =
     user?.avatar_url ||
     user?.avatar ||
@@ -306,184 +267,97 @@ export default function Header() {
 
   const avatarChar = user?.name?.charAt(0)?.toUpperCase() || 'U'
 
-  const categoryLinks = (
-    <>
-      {navCategories.length > 0 ? (
-        navCategories.map(cat => (
-          <NavLink key={cat.id} to={`/${cat.slug}`} className={navClass}>
-            {cat.name}
-          </NavLink>
-        ))
-      ) : (
-        <>
-          <NavLink to="/phong-tro" className={navClass}>
-            Phòng trọ
-          </NavLink>
-          <NavLink to="/nha-nguyen-can" className={navClass}>
-            Nhà nguyên căn
-          </NavLink>
-          <NavLink to="/can-ho" className={navClass}>
-            Căn hộ
-          </NavLink>
-          <NavLink to="/ky-tuc-xa" className={navClass}>
-            Ký túc xá
-          </NavLink>
-        </>
-      )}
-    </>
-  )
-
-  const drawerCategoryLinks = (
-    <>
-      {navCategories.length > 0 ? (
-        navCategories.map(cat => (
-          <NavLink
-            key={cat.id}
-            to={`/${cat.slug}`}
-            className={drawerNavClass}
-            onClick={() => setDrawerOpen(false)}
-          >
-            {cat.name}
-          </NavLink>
-        ))
-      ) : (
-        <>
-          <NavLink
-            to="/phong-tro"
-            className={drawerNavClass}
-            onClick={() => setDrawerOpen(false)}
-          >
-            Phòng trọ
-          </NavLink>
-          <NavLink
-            to="/nha-nguyen-can"
-            className={drawerNavClass}
-            onClick={() => setDrawerOpen(false)}
-          >
-            Nhà nguyên căn
-          </NavLink>
-          <NavLink
-            to="/can-ho"
-            className={drawerNavClass}
-            onClick={() => setDrawerOpen(false)}
-          >
-            Căn hộ
-          </NavLink>
-          <NavLink
-            to="/ky-tuc-xa"
-            className={drawerNavClass}
-            onClick={() => setDrawerOpen(false)}
-          >
-            Ký túc xá
-          </NavLink>
-        </>
-      )}
-    </>
-  )
+  // ================= RENDER =================
+  const categoryLinks = navCategories.length > 0
+    ? navCategories.map(cat => (
+        <NavLink key={cat.id} to={`/${cat.slug}`} className={navClass}>
+          {cat.name}
+        </NavLink>
+      ))
+    : (
+      <>
+        <NavLink to="/phong-tro" className={navClass}>Phòng trọ</NavLink>
+        <NavLink to="/nha-nguyên-can" className={navClass}>Nhà nguyên căn</NavLink>
+        <NavLink to="/can-ho" className={navClass}>Căn hộ</NavLink>
+        <NavLink to="/ky-tuc-xa" className={navClass}>Ký túc xá</NavLink>
+      </>
+    )
 
   return (
     <>
       <header className="site-header">
         <div className="container site-header__inner">
-          {/* logo luôn ở bên trái */}
+
+          {/* Logo */}
           <Link to="/" className="brand">
             <img src={logo} alt="Logo" />
           </Link>
 
-          {/* NAV DESKTOP (hidden trên mobile bằng CSS) */}
+          {/* NAV */}
           <nav className="nav" ref={navRef}>
             <span className="nav__indicator" style={indicatorStyle} />
             {categoryLinks}
-            <NavLink to="/reviews" className={navClass}>
-              Review
-            </NavLink>
-            <NavLink to="/blog" className={navClass}>
-              Blog
-            </NavLink>
+            <NavLink to="/reviews" className={navClass}>Review</NavLink>
+            <NavLink to="/blog" className={navClass}>Blog</NavLink>
           </nav>
 
-          {/* ACTIONS + BURGER */}
+          {/* ACTIONS */}
           <div className="site-header__actions">
-            {/* NÚT YÊU THÍCH (TRÁI TIM) – BÊN TRÁI AVATAR */}
+
+            {/* Wishlist */}
             <button
-              type="button"
               className="header-heart"
-              onClick={handleWishlistClick}
-              aria-label="Danh sách yêu thích"
+              onClick={() => !user ? setShowLogin(true) : navigate('/wishlist')}
             >
               <span className="header-heart__icon"><Heart /></span>
               {wishlistCount > 0 && (
-                <span className="header-heart__badge">
-                  {wishlistCount}
-                </span>
+                <span className="header-heart__badge">{wishlistCount}</span>
               )}
             </button>
 
-            {/* CHƯA ĐĂNG NHẬP -> 2 nút + (mobile sẽ ẩn bằng CSS) */}
+            {/* Chưa đăng nhập */}
             {!user && (
               <>
-                <button
-                  type="button"
-                  className="btn btn--ghost"
-                  onClick={() => setShowLogin(true)}
-                >
-                  Đăng nhập
-                </button>
-
-                <button
-                  type="button"
-                  className="btn btn--ghost"
-                  onClick={() => setShowRegister(true)}
-                >
-                  Đăng ký
-                </button>
+                <button className="btn btn--ghost" onClick={() => setShowLogin(true)}>Đăng nhập</button>
+                <button className="btn btn--ghost" onClick={() => setShowRegister(true)}>Đăng ký</button>
               </>
             )}
 
-            {/* ĐÃ ĐĂNG NHẬP -> avatar + dropdown (desktop) */}
+            {/* ĐÃ LOGIN */}
             {user && (
               <div className="header-auth-user" ref={userMenuRef}>
-                <button
-                  type="button"
-                  className="header-avatar-btn"
-                  onClick={() => setMenuOpen(prev => !prev)}
-                >
+
+                {/* Avatar */}
+                <button type="button" className="header-avatar-btn" onClick={handleOpenMenu}>
                   <div className="header-avatar">
-                    {avatarUrl ? (
-                      <img src={avatarUrl} alt={user.name} />
-                    ) : (
-                      avatarChar
-                    )}
+                    {avatarUrl ? <img src={avatarUrl} alt={user.name} /> : avatarChar}
                   </div>
-                  {/* Admin notification badge */}
-                  {user.role === 'admin' && hasAdminNotifications && (
+
+                  {/* Badge ở avatar */}
+                  {user.role === 'admin' && unreadAdmin > 0 && notiStage === "avatar" && (
                     <span className="header-avatar__notification" />
                   )}
                 </button>
 
+                {/* DROPDOWN */}
                 {menuOpen && (
                   <div className="header-menu">
                     <div className="header-menu__top">
                       <div className="header-menu__avatar">
-                        {avatarUrl ? (
-                          <img src={avatarUrl} alt={user.name} />
-                        ) : (
-                          avatarChar
-                        )}
+                        {avatarUrl ? <img src={avatarUrl} /> : avatarChar}
                       </div>
                       <div>
                         <p className="header-menu__name">{user.name}</p>
                         <p className="header-menu__role">
-                          {user.role === 'admin'
-                            ? 'Quản trị viên'
-                            : 'Người dùng'}
+                          {user.role === 'admin' ? 'Quản trị viên' : 'Người dùng'}
                         </p>
                       </div>
                     </div>
 
                     <div className="header-menu__list">
+
+                      {/* CÀI ĐẶT */}
                       <button
-                        type="button"
                         className="header-menu__item"
                         onClick={() => {
                           setShowSettings(true)
@@ -493,21 +367,29 @@ export default function Header() {
                         Cài đặt tài khoản
                       </button>
 
+                      {/* ADMIN */}
                       {user.role === 'admin' && (
-                        <button
-                          type="button"
-                          className="header-menu__item"
-                          onClick={() => {
-                            navigate('/admin')
-                            setMenuOpen(false)
-                          }}
-                        >
+                        <button className="header-menu__item" onClick={handleGoAdmin}>
                           Khu vực quản trị
+
+                          {unreadAdmin > 0 && notiStage === "menu" && (
+                            <span className="menu-badge-dot"></span>
+                          )}
                         </button>
                       )}
 
+                      {/* LESSOR */}
+                      {user.role === 'lessor' && (
+                        <button className="header-menu__item" onClick={() => {
+                          navigate('/lessor')
+                          setMenuOpen(false)
+                        }}>
+                          Trung tâm quản lý
+                        </button>
+                      )}
+
+                      {/* Đăng xuất */}
                       <button
-                        type="button"
                         className="header-menu__item header-menu__item--danger"
                         onClick={handleLogout}
                       >
@@ -519,154 +401,21 @@ export default function Header() {
               </div>
             )}
 
-            {/* NÚT 3 GẠCH (HIỆN TRÊN MOBILE, CSS handle) */}
+            {/* BURGER MENU */}
             <button
-              type="button"
               className={'header-burger' + (drawerOpen ? ' is-active' : '')}
               onClick={() => setDrawerOpen(prev => !prev)}
-              aria-label="Mở menu"
             >
               <span />
               <span />
               <span />
             </button>
+
           </div>
         </div>
       </header>
 
-      {/* BACKDROP & DRAWER MOBILE MENU */}
-      <div
-        className={
-          'header-drawer__backdrop' + (drawerOpen ? ' is-open' : '')
-        }
-        onClick={() => setDrawerOpen(false)}
-      />
-      <aside className={'header-drawer' + (drawerOpen ? ' is-open' : '')}>
-        <div className="header-drawer__inner">
-          {user ? (
-            <>
-              {/* user block */}
-              <div className="header-drawer__user">
-                <div className="header-drawer__avatar">
-                  {avatarUrl ? (
-                    <img src={avatarUrl} alt={user.name} />
-                  ) : (
-                    <span>{avatarChar}</span>
-                  )}
-                </div>
-                <div>
-                  <p className="header-drawer__name">{user.name}</p>
-                  <p className="header-drawer__role">
-                    {user.role === 'admin' ? 'Quản trị viên' : 'Người dùng'}
-                  </p>
-                </div>
-              </div>
-
-              {/* nav links */}
-              <nav className="header-drawer__nav">
-                {drawerCategoryLinks}
-                <NavLink
-                  to="/reviews"
-                  className={drawerNavClass}
-                  onClick={() => setDrawerOpen(false)}
-                >
-                  Review
-                </NavLink>
-                <NavLink
-                  to="/blog"
-                  className={drawerNavClass}
-                  onClick={() => setDrawerOpen(false)}
-                >
-                  Blog
-                </NavLink>
-              </nav>
-
-              {/* Nút wishlist trên mobile */}
-              <button
-                type="button"
-                className="header-drawer__btn"
-                onClick={handleWishlistClick}
-              >
-                ❤️ Danh sách yêu thích
-                {wishlistCount > 0 && ` (${wishlistCount})`}
-              </button>
-
-              {/* actions giống avatar menu */}
-              <button
-                type="button"
-                className="header-drawer__btn"
-                onClick={() => {
-                  setShowSettings(true)
-                  setDrawerOpen(false)
-                }}
-              >
-                Cài đặt tài khoản
-              </button>
-
-              {user.role === 'admin' && (
-                <button
-                  type="button"
-                  className="header-drawer__btn"
-                  onClick={() => {
-                    navigate('/admin')
-                    setDrawerOpen(false)
-                  }}
-                >
-                  Khu vực quản trị
-                </button>
-              )}
-
-              <button
-                type="button"
-                className="header-drawer__btn header-drawer__btn--danger"
-                onClick={handleLogout}
-              >
-                Đăng xuất
-              </button>
-            </>
-          ) : (
-            <>
-              {/* chưa login: nav + nút login/register */}
-              <nav className="header-drawer__nav">
-                {drawerCategoryLinks}
-                <NavLink
-                  to="/reviews"
-                  className={drawerNavClass}
-                  onClick={() => setDrawerOpen(false)}
-                >
-                  Review
-                </NavLink>
-                <NavLink
-                  to="/blog"
-                  className={drawerNavClass}
-                  onClick={() => setDrawerOpen(false)}
-                >
-                  Blog
-                </NavLink>
-              </nav>
-
-              <div className="header-drawer__auth">
-                <button
-                  type="button"
-                  className="header-drawer__btn"
-                  onClick={openLogin}
-                >
-                  Đăng nhập
-                </button>
-                <button
-                  type="button"
-                  className="header-drawer__btn"
-                  onClick={openRegister}
-                >
-                  Đăng ký
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      </aside>
-
-      {/* Popup login / register */}
+      {/* ⚡ POPUP LOGIN */}
       {showLogin && (
         <Login
           onClose={() => setShowLogin(false)}
@@ -677,6 +426,7 @@ export default function Header() {
         />
       )}
 
+      {/* ⚡ POPUP REGISTER */}
       {showRegister && (
         <Register
           onClose={() => setShowRegister(false)}
@@ -687,15 +437,15 @@ export default function Header() {
         />
       )}
 
-      {/* Popup cài đặt tài khoản */}
+      {/* ⚡ POPUP SETTINGS — BƯỚC QUAN TRỌNG */}
       {showSettings && user && (
         <UserSettingsModal
           user={user}
           onClose={() => setShowSettings(false)}
           onUpdated={u => {
             setUser(u)
-            localStorage.setItem('auth_user', JSON.stringify(u))
-            window.dispatchEvent(new Event('auth:changed'))
+            localStorage.setItem("auth_user", JSON.stringify(u))
+            window.dispatchEvent(new Event("auth:changed"))
           }}
         />
       )}

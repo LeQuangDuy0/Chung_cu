@@ -78,16 +78,42 @@ export default function Wishlist() {
 
   // load dữ liệu post yêu thích
   useEffect(() => {
-    const ids = getWishlistIds()
-    if (!ids.length) {
-      setItems([])
-      return
-    }
-
-    const fetchData = async () => {
+    const token = localStorage.getItem('access_token')
+    
+    const loadWishlist = async () => {
       try {
         setLoading(true)
         setError('')
+
+        // Lấy danh sách ID từ API nếu login, nếu không thì dùng localStorage
+        let ids = []
+        if (token) {
+          try {
+            const res = await fetch('http://localhost:8000/api/saved-posts/ids', {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                Accept: 'application/json',
+              },
+            })
+            
+            if (res.ok) {
+              const data = await res.json()
+              if (data.status && Array.isArray(data.data)) {
+                ids = data.data
+              }
+            }
+          } catch (err) {
+            console.error('Fetch wishlist from API error:', err)
+            ids = getWishlistIds()
+          }
+        } else {
+          ids = getWishlistIds()
+        }
+        
+        if (!ids.length) {
+          setItems([])
+          return
+        }
 
         // ==== bulk /posts?ids=1,2,3 ====
         const res = await axios.get(`${API_BASE_URL}/posts`, {
@@ -165,7 +191,7 @@ export default function Wishlist() {
       }
     }
 
-    fetchData()
+    loadWishlist()
   }, [])
 
   // luôn làm sạch selectedIds nếu items thay đổi (tránh giữ id không còn tồn tại)

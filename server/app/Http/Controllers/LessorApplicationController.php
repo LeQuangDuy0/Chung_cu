@@ -5,206 +5,187 @@ namespace App\Http\Controllers;
 use App\Models\LessorApplication;
 use App\Models\Notification;
 use App\Models\User;
-use App\Services\CloudinaryService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class LessorApplicationController extends Controller
 {
-    protected $cloudinary;
-
-    public function __construct(CloudinaryService $cloudinary)
-    {
-        $this->cloudinary = $cloudinary;
-    }
-
-    // POST /api/lessor/apply (user gửi yêu cầu trở thành chủ cho thuê)
+    // USER GỬI YÊU CẦU
     public function apply(Request $request)
     {
-        $user = auth()->user();
+        $user = Auth::user();
 
-        if ($user->role !== 'user') {
-            return response()->json(['message' => 'Bạn không thể gửi yêu cầu.'], 403);
-        }
-
-        $pending = LessorApplication::where('user_id', $user->id)
-            ->where('status', 'pending')
-            ->first();
-
-        if ($pending) {
+        if (in_array($user->role ?? 'user', ['lessor', 'admin'])) {
             return response()->json([
-                'message' => 'Bạn đã gửi yêu cầu và đang chờ duyệt.'
+                'status'  => false,
+                'message' => 'Tài khoản của bạn đã có quyền đăng tin.',
             ], 400);
         }
 
-        $request->validate([
-            'note' => 'nullable|string',
-            'pdf'  => 'required|mimes:pdf|max:5120'
-        ]);
+        $existing = LessorApplication::where('user_id', $user->id)
+            ->where('status', 'pending')
+            ->first();
 
-        // Tạo yêu cầu mới (chưa có PDF)
+        if ($existing) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Bạn đã gửi yêu cầu và đang chờ duyệt.',
+                'data'    => $existing,
+            ], 400);
+        }
+
         $application = LessorApplication::create([
             'user_id' => $user->id,
-            'note' => $request->note,
-            'status' => 'pending'
+            'status'  => 'pending',
+            'note'    => $request->input('note'),
         ]);
 
-        // Upload PDF lên Cloudinary
-        $upload = $this->cloudinary->upload(
-            $request->file('pdf')->getRealPath(),
-            'lessor_applications'
-        );
-
-        // Lưu file vào bảng cloudinary_files
-        $application->files()->create([
-            'public_id' => $upload['public_id'],
-            'url'       => $upload['secure_url'],
-            'type'      => 'lessor_pdf'
-        ]);
-
-        // Gửi thông báo đến tất cả admin
-        $admins = User::admins()->get(); // dùng scopeAdmins()
-
+        $admins = User::where('role', 'admin')->get();
         foreach ($admins as $admin) {
             Notification::create([
                 'user_id' => $admin->id,
-                'type' => 'lessor_request',
-                'content' => "Người dùng {$user->name} đã gửi yêu cầu trở thành người cho thuê."
+                'title'   => 'Yêu cầu nâng cấp tài khoản chủ phòng',
+                'body'    => $user->name . ' vừa gửi yêu cầu trở thành chủ phòng.',
+                'type'    => 'lessor_request',
+                'data'    => [
+                    'application_id' => $application->id,
+                    'user_id'        => $user->id,
+                ],
             ]);
         }
 
         return response()->json([
-            'message' => 'Gửi yêu cầu thành công.',
-            'data' => $application
+            'status'  => true,
+            'message' => 'Yêu cầu nâng cấp đã gửi tới admin. Vui lòng chờ phản hồi.',
+            'data'    => $application,
         ]);
     }
 
-
-    // GET /api/lessor/my (user xem yêu cầu của mình)
+    // USER XEM TRẠNG THÁI YÊU CẦU
     public function myRequest()
     {
-        return LessorApplication::with('pdfFile')
-            ->where('user_id', auth()->id())
-            ->orderBy('created_at', 'DESC')
-            ->get();
-    }
+        $user = Auth::user();
 
-    // GET /api/admin/lessor/requests (admin xem danh sách)
-    public function adminIndex()
-    {
-        if (auth()->user()->role !== 'admin') {
-            return response()->json(['message' => 'Không có quyền'], 403);
-        }
-
-        return LessorApplication::with(['user', 'pdfFile'])
-            ->orderBy('created_at', 'DESC')
-            ->get();
-    }
-
-    // POST /api/admin/lessor/approve/{id} (admin phê duyệt)
-    public function approve($id, Request $request)
-    {
-        if (auth()->user()->role !== 'admin')
-            return response()->json(['message' => 'Không có quyền'], 403);
-
-        $application = LessorApplication::findOrFail($id);
-
-        //Không thể duyệt nếu không phải pending
-        if ($application->status !== 'pending') {
-            return response()->json([
-                'message' => 'Yêu cầu này đã được xử lý trước đó và không thể phê duyệt lại.'
-            ], 400);
-        }
-
-        $application->update([
-            'status' => 'approved',
-            'admin_note' => $request->admin_note
-        ]);
-
-        // Cập nhật user role
-        $application->user->update(['role' => 'lessor']);
-
-        Notification::create([
-            'user_id' => $application->user_id,
-            'type' => 'lessor_approved',
-            'content' => 'Yêu cầu của bạn đã được phê duyệt.'
-        ]);
-
-        return response()->json(['message' => 'Đã phê duyệt']);
-    }
-
-    // POST /api/admin/lessor/reject/{id} (admin từ chối)
-    public function reject($id, Request $request)
-    {
-        if (auth()->user()->role !== 'admin')
-            return response()->json(['message' => 'Không có quyền'], 403);
-
-        $application = LessorApplication::findOrFail($id);
-
-        //Không thể từ chối nếu không phải pending
-        if ($application->status !== 'pending') {
-            return response()->json([
-                'message' => 'Yêu cầu này đã được xử lý trước đó và không thể từ chối lại.'
-            ], 400);
-        }
-
-        $application->update([
-            'status' => 'rejected',
-            'admin_note' => $request->admin_note
-        ]);
-
-        Notification::create([
-            'user_id' => $application->user_id,
-            'type' => 'lessor_rejected',
-            'content' => "Yêu cầu bị từ chối. Lý do: " . $request->admin_note
-        ]);
-
-        return response()->json(['message' => 'Đã từ chối']);
-    }
-
-    // DELETE /api/admin/lessor/delete/{id}
-    public function delete($id)
-    {
-        $admin = auth()->user();
-
-        if ($admin->role !== 'admin') {
-            return response()->json(['message' => 'Không có quyền'], 403);
-        }
-
-        $application = LessorApplication::with('pdfFile')->find($id);
-
-        if (!$application) {
-            return response()->json(['message' => 'Không tìm thấy yêu cầu'], 404);
-        }
-
-        // ===== XÓA FILE PDF TRÊN CLOUDINARY =====
-        if ($application->pdfFile) {
-            $publicId = $application->pdfFile->public_id;
-
-            // Xóa Cloudinary
-            try {
-                $this->cloudinary->delete($publicId);
-            } catch (\Exception $e) {
-                // Tiếp tục xóa dữ liệu ngay cả khi cloudinary lỗi
-            }
-
-            // Xóa bản ghi file
-            $application->pdfFile->delete();
-        }
-
-        // ===== THÔNG BÁO CHO USER =====
-        Notification::create([
-            'user_id' => $application->user_id,
-            'type' => 'lessor_request_deleted',
-            'content' => 'Yêu cầu trở thành chủ cho thuê của bạn đã bị admin xóa.'
-        ]);
-
-        // ===== XÓA YÊU CẦU =====
-        $application->delete();
+        $application = LessorApplication::where('user_id', $user->id)
+            ->latest()
+            ->first();
 
         return response()->json([
             'status' => true,
-            'message' => 'Xóa yêu cầu thành công.'
+            'data'   => $application,
         ]);
     }
 
+    // ADMIN LIST YÊU CẦU
+    public function adminIndex(Request $request)
+    {
+        $admin = Auth::user();
+        if (($admin->role ?? 'user') !== 'admin') {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $query = LessorApplication::with('user')->latest();
+
+        if ($status = $request->get('status')) {
+            $query->where('status', $status);
+        }
+
+        $applications = $query->paginate($request->get('per_page', 20));
+
+        return response()->json([
+            'status' => true,
+            'data'   => $applications->items(),    // chỉ gửi array
+            'meta'   => [
+                'current_page' => $applications->currentPage(),
+                'last_page'    => $applications->lastPage(),
+                'per_page'     => $applications->perPage(),
+                'total'        => $applications->total(),
+            ],
+        ]);
+    }
+
+    // ADMIN DUYỆT
+    public function approve($id)
+    {
+        $admin = Auth::user();
+        if (($admin->role ?? 'user') !== 'admin') {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $application = LessorApplication::with('user')->findOrFail($id);
+
+        $application->status = 'approved';
+        $application->rejection_reason = null;
+        $application->save();
+
+        $user = $application->user;
+        $user->role = 'lessor';
+        $user->save();
+
+        Notification::create([
+            'user_id' => $user->id,
+            'title'   => 'Yêu cầu nâng cấp tài khoản đã được duyệt',
+            'body'    => 'Xin chúc mừng! Bạn đã được nâng cấp thành tài khoản chủ phòng.',
+            'type'    => 'lessor_approved',
+            'data'    => [
+                'application_id' => $application->id,
+            ],
+        ]);
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Đã duyệt yêu cầu.',
+        ]);
+    }
+
+    // ADMIN TỪ CHỐI
+    public function reject(Request $request, $id)
+    {
+        $admin = Auth::user();
+        if (($admin->role ?? 'user') !== 'admin') {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $application = LessorApplication::with('user')->findOrFail($id);
+
+        $reason = $request->input('reason', 'Yêu cầu của bạn chưa đáp ứng điều kiện hệ thống.');
+
+        $application->status = 'rejected';
+        $application->rejection_reason = $reason;
+        $application->save();
+
+        $user = $application->user;
+
+        Notification::create([
+            'user_id' => $user->id,
+            'title'   => 'Yêu cầu nâng cấp tài khoản bị từ chối',
+            'body'    => $reason,
+            'type'    => 'lessor_rejected',
+            'data'    => [
+                'application_id' => $application->id,
+            ],
+        ]);
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Đã từ chối yêu cầu.',
+        ]);
+    }
+
+    // ADMIN XOÁ
+    public function delete($id)
+    {
+        $admin = Auth::user();
+        if (($admin->role ?? 'user') !== 'admin') {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $application = LessorApplication::findOrFail($id);
+        $application->delete();
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Đã xoá yêu cầu.',
+        ]);
+    }
 }

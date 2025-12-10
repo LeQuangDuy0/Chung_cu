@@ -22,7 +22,7 @@ import Wishlist from './pages/Wishlist.jsx'
 
 
 // Admin pages
-import AdminLayout from './pages/admin/AdminLayout.jsx'
+import AdminLayout from './components/AdminLayout.jsx'
 import AdminDashboard from './pages/admin/AdminDashboard.jsx'
 import AdminPosts from './pages/admin/AdminPosts.jsx'
 import AdminUsers from './pages/admin/AdminUsers.jsx'
