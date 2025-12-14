@@ -917,9 +917,43 @@ async function handleDeleteReview(reviewId) {
               </p>
             )}
 
-            <button type="button" className="pd-btn pd-btn--ghost">
-              Nhắn tin (Zalo / Messenger)
-            </button>
+         <div className="pd-chat-split">
+  {/* ZALO */}
+  <button
+    type="button"
+    className="pd-chat-btn pd-chat-btn--zalo"
+    onClick={() => {
+      if (!hostPhone) {
+        alert('Chưa có số điện thoại của chủ nhà')
+        return
+      }
+      window.open(`https://zalo.me/${hostPhone}`, '_blank')
+    }}
+  >
+    Zalo
+  </button>
+
+  {/* MESSENGER */}
+  <button
+    type="button"
+    className="pd-chat-btn pd-chat-btn--messenger"
+    onClick={() => {
+      if (!post.user?.facebook_id && !post.user?.facebook_url) {
+        alert('Chủ nhà chưa cung cấp Messenger')
+        return
+      }
+
+      const fbUrl =
+        post.user?.facebook_url ||
+        `https://m.me/${post.user.facebook_id}`
+
+      window.open(fbUrl, '_blank')
+    }}
+  >
+    Messenger
+  </button>
+</div>
+
 
             <p className="pd-contact__note">
               Vui lòng nói rõ bạn xem tin trên hệ thống để được ưu tiên hỗ

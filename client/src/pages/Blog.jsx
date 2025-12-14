@@ -6,83 +6,46 @@ import '../assets/style/pages/blog.css'
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api'
 
-const MOCK_BLOGS = [
-  {
-    id: 1,
-    title: 'Kinh nghiệm thực tế khi đi xem trọ lần đầu',
-    category: 'Kinh nghiệm thuê trọ',
-    image:
-      'https://images.pexels.com/photos/462235/pexels-photo-462235.jpeg?auto=compress&cs=tinysrgb&w=1200',
-    created_at: '2024-09-03',
-    author: 'Apartments Team',
-    read_time: '6 phút đọc',
-    excerpt:
-      'Chuẩn bị những gì trước khi đi xem phòng, nên hỏi chủ nhà câu gì, nhận diện phòng trọ “có vấn đề”...',
-  },
-  {
-    id: 2,
-    title: 'Chọn khu vực phù hợp với sinh viên',
-    category: 'Gợi ý khu vực',
-    image:
-      'https://images.pexels.com/photos/167404/pexels-photo-167404.jpeg?auto=compress&cs=tinysrgb&w=1200',
-    created_at: '2024-08-21',
-    author: 'Apartments Team',
-    read_time: '5 phút đọc',
-    excerpt:
-      'Khoảng cách tới trường, an ninh, tiền ăn ở, chi phí đi lại… Cách cân bằng để chọn khu vực hợp lý.',
-  },
-  {
-    id: 3,
-    title: 'Mẹo tiết kiệm chi phí điện nước khi ở trọ',
-    category: 'Mẹo tiết kiệm',
-    image:
-      'https://images.pexels.com/photos/5720565/pexels-photo-5720565.jpeg?auto=compress&cs=tinysrgb&w=1200',
-    created_at: '2024-07-10',
-    author: 'Apartments Team',
-    read_time: '4 phút đọc',
-    excerpt:
-      'Một vài thói quen nhỏ mỗi ngày giúp bạn giảm đáng kể tiền điện nước mà vẫn sinh hoạt thoải mái.',
-  },
-  {
-    id: 4,
-    title: 'Checklist đồ dùng cần có khi chuyển vào phòng trọ mới',
-    category: 'Checklist',
-    image:
-      'https://images.pexels.com/photos/7464661/pexels-photo-7464661.jpeg?auto=compress&cs=tinysrgb&w=1200',
-    created_at: '2024-06-01',
-    author: 'Apartments Team',
-    read_time: '7 phút đọc',
-    excerpt:
-      'Từ đồ bếp, vệ sinh, điện tử tới giấy tờ quan trọng – checklist giúp bạn không bỏ sót món nào.',
-  },
-]
+/* =======================
+   HELPER: chuẩn hóa URL ảnh
+   - URL đầy đủ -> dùng luôn
+   - Path (blogs/x.png) -> gắn /storage
+======================= */
 
+
+function resolveImage(src) {
+  if (!src) return null
+  if (src.startsWith('http')) return src
+  return `http://127.0.0.1:8000/storage/${src}`
+}
+
+/* =======================
+   MAP API -> UI
+======================= */
 function mapApiBlogToUi(b) {
   return {
     id: b.id,
-    title: b.title || b.name || 'Bài viết',
-    category:
-      b.category?.name || b.category_name || b.category || 'Khác',
-    image:
-      b.image_url ||
-      b.thumbnail_url ||
-      b.cover_image ||
-      'https://via.placeholder.com/800x500?text=Blog',
-    created_at: b.created_at || b.published_at || '2024-01-01',
-    author: b.author?.name || b.author_name || 'Apartments Team',
-    read_time: b.read_time || '5 phút đọc',
-    excerpt: b.excerpt || b.summary || b.description || '',
+    title: b.title,
+    category: 'Khác',
+    image: b.cover_image_url || 'https://via.placeholder.com/800x500?text=Blog',
+    created_at: b.created_at,
+    author: 'Apartments Team',
+    read_time: '5 phút đọc',
+    excerpt: b.excerpt || '',
   }
 }
 
+
 export default function BlogPage() {
-  const [blogs, setBlogs] = useState(MOCK_BLOGS)
+  const [blogs, setBlogs] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('')
 
-  // LOAD BLOG TỪ API
+  /* =======================
+     LOAD BLOG TỪ API
+  ======================= */
   useEffect(() => {
     let cancelled = false
 
@@ -95,30 +58,24 @@ export default function BlogPage() {
           headers: { Accept: 'application/json' },
         })
 
-        const text = await res.text()
-        let json
-        try {
-          json = JSON.parse(text)
-        } catch {
-          throw new Error('Phản hồi blogs không phải JSON hợp lệ.')
-        }
+        const json = await res.json()
 
         if (!res.ok) {
-          throw new Error(json?.message || 'Không tải được danh sách blog')
+          throw new Error(json?.message || 'Không tải được blog')
         }
 
         const list = json.data || json || []
-        if (!Array.isArray(list) || list.length === 0) return
+        if (!Array.isArray(list)) {
+          throw new Error('Dữ liệu blog không hợp lệ')
+        }
 
         const mapped = list.map(mapApiBlogToUi)
-        if (!cancelled) {
-          setBlogs(mapped)
-        }
+        if (!cancelled) setBlogs(mapped)
       } catch (err) {
         console.error('Lỗi load blogs:', err)
         if (!cancelled) {
-          setError(err.message || 'Có lỗi khi tải blog, đang dùng dữ liệu demo.')
-          setBlogs(MOCK_BLOGS)
+          setError('Không tải được blog từ server')
+          setBlogs([])
         }
       } finally {
         if (!cancelled) setLoading(false)
@@ -131,6 +88,9 @@ export default function BlogPage() {
     }
   }, [])
 
+  /* =======================
+     FILTER
+  ======================= */
   const categories = [
     ...new Set(blogs.map(b => b.category).filter(Boolean)),
   ]
@@ -152,14 +112,16 @@ export default function BlogPage() {
             Cẩm nang thuê trọ &amp; ở chung cư
           </h1>
           <p className="blog-subtitle">
-            Tổng hợp kinh nghiệm thực tế dựa trên hàng nghìn bài đăng, đánh
-            giá &amp; khu vực trong hệ thống.
+            Tổng hợp kinh nghiệm thực tế dựa trên hàng nghìn bài đăng,
+            đánh giá &amp; khu vực trong hệ thống.
           </p>
         </div>
       </header>
 
       <section className="blog-layout">
-        {/* Cột trái: danh sách bài viết */}
+        {/* =======================
+            MAIN
+        ======================= */}
         <div className="blog-main">
           {loading && <p>Đang tải bài viết...</p>}
           {error && <p className="blog-error">{error}</p>}
@@ -167,10 +129,7 @@ export default function BlogPage() {
           {!loading && !error && (
             <>
               {filtered.length === 0 && (
-                <p className="blog-empty">
-                  Không tìm thấy bài viết phù hợp. Thử đổi từ khóa hoặc danh
-                  mục khác nhé.
-                </p>
+                <p className="blog-empty">Không có bài viết.</p>
               )}
 
               <div className="blog-grid">
@@ -182,16 +141,20 @@ export default function BlogPage() {
                         {new Date(b.created_at).toLocaleDateString('vi-VN')}
                       </span>
                     </div>
+
                     <div className="blog-card__body">
                       <span className="blog-card__cat">{b.category}</span>
+
                       <h2 className="blog-card__title">
-                        {/* sau này dùng /blog/:id hoặc :slug */}
                         <Link to={`/blog/${b.id}`}>{b.title}</Link>
                       </h2>
+
                       <p className="blog-card__meta">
                         Bởi <strong>{b.author}</strong> · {b.read_time}
                       </p>
+
                       <p className="blog-card__excerpt">{b.excerpt}</p>
+
                       <Link
                         to={`/blog/${b.id}`}
                         className="blog-card__more"
@@ -206,10 +169,13 @@ export default function BlogPage() {
           )}
         </div>
 
-        {/* Cột phải: bộ lọc + bài nổi bật */}
+        {/* =======================
+            ASIDE
+        ======================= */}
         <aside className="blog-aside">
           <div className="blog-widget">
             <h3>Bộ lọc nhanh</h3>
+
             <label className="blog-field">
               <span>Tìm theo từ khóa</span>
               <input
@@ -255,10 +221,10 @@ export default function BlogPage() {
           <div className="blog-widget blog-widget--note">
             <h3>Dựa trên dữ liệu thực</h3>
             <p>
-              Các bài viết được đề xuất từ dữ liệu <strong>posts</strong>,{' '}
-              <strong>reviews</strong>, khu vực (
-              <strong>provinces, districts, wards</strong>) để giúp bạn chọn
-              nơi ở phù hợp hơn.
+              Các bài viết được đề xuất từ dữ liệu <strong>posts</strong>,
+              <strong> reviews</strong>, khu vực (
+              <strong>provinces, districts, wards</strong>) để giúp bạn
+              chọn nơi ở phù hợp hơn.
             </p>
           </div>
         </aside>

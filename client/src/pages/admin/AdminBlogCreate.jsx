@@ -74,7 +74,7 @@ export default function AdminBlogCreate() {
         // })
       }
 
-      const res = await fetch(`${API_BASE_URL}/blogs`, {
+      const res = await fetch(`${API_BASE_URL}/admin/blogs`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,

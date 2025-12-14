@@ -79,10 +79,12 @@ export default function ResetPassword() {
         throw new Error(data.message || 'Đặt lại mật khẩu thất bại.')
       }
 
-      setSuccess(data.message || 'Đặt lại mật khẩu thành công.')
-      setTimeout(() => {
-        navigate('/login')
-      }, 1200)
+     setSuccess('Đặt lại mật khẩu thành công. Đang quay về đăng nhập...')
+
+setTimeout(() => {
+  navigate('/login', { replace: true })
+}, 1500)
+
     } catch (err) {
       console.error(err)
       setError(err.message || 'Có lỗi xảy ra, vui lòng thử lại.')

@@ -244,37 +244,37 @@ export default function AdminDashboard() {
   }
 
   // ================== LESSOR REQUEST ACTION ==================
-const handleLessorAction = async (id, action) => {
-  let url = `${API_BASE_URL}/admin/lessor-requests/${id}/${action}`;
-  let method = "POST";
-  if (action === "delete") method = "DELETE";
+  const handleLessorAction = async (id, action) => {
+    let url = `${API_BASE_URL}/admin/lessor-requests/${id}/${action}`;
+    let method = "POST";
+    if (action === "delete") method = "DELETE";
 
-  if (!confirm("Chắc chắn?")) return;
+    if (!confirm("Chắc chắn?")) return;
 
-  try {
-    const res = await fetch(url, {
-      method,
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
-    const data = await safeJson(res);
-    if (!res.ok) throw new Error(data?.message || "Lỗi không xác định");
+      const data = await safeJson(res);
+      if (!res.ok) throw new Error(data?.message || "Lỗi không xác định");
 
-    // ==========================
-    // 🔥 FIX QUAN TRỌNG NHẤT
-    // Xoá yêu cầu khỏi danh sách ngay lập tức
-    // ==========================
-    setLessorRequests(prev =>
-      prev.filter(r => r.id !== id)
-    );
+      // ==========================
+      // 🔥 FIX QUAN TRỌNG NHẤT
+      // Xoá yêu cầu khỏi danh sách ngay lập tức
+      // ==========================
+      setLessorRequests(prev =>
+        prev.filter(r => r.id !== id)
+      );
 
-    // 🔥 Tự đóng modal
-    setSelectedRequest(null);
+      // 🔥 Tự đóng modal
+      setSelectedRequest(null);
 
-  } catch (err) {
-    alert(err.message);
-  }
-};
+    } catch (err) {
+      alert(err.message);
+    }
+  };
 
 
   const resetFilters = () => {
@@ -537,131 +537,132 @@ const handleLessorAction = async (id, action) => {
       </section>
 
       {/* ================= LESSOR REQUESTS ================= */}
-     {/* ================= LESSOR REQUESTS ================= */}
-<section className="admin-section">
-  <h2>Yêu cầu người cho thuê</h2>
+      {/* ================= LESSOR REQUESTS ================= */}
+      <section className="admin-section">
+        <h2>Yêu cầu người cho thuê</h2>
 
-  {lessorError && <p className="admin-error">{lessorError}</p>}
-  {lessorLoading && <p className="admin-loading">Đang tải…</p>}
+        {lessorError && <p className="admin-error">{lessorError}</p>}
+        {lessorLoading && <p className="admin-loading">Đang tải…</p>}
 
-  {!lessorLoading && !lessorError && (
-    <div className="admin-table-wrap">
-      <table className="admin-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Họ tên</th>
-            <th>Email</th>
-            <th>Số điện thoại</th>
-            <th>Ngày sinh</th>
-            <th>Trạng thái</th>
-            <th>Thời gian</th>
-            <th>Hành động</th>
-          </tr>
-        </thead>
+        {!lessorLoading && !lessorError && (
+          <div className="admin-table-wrap">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Họ tên</th>
+                  <th>Email</th>
+                  <th>Số điện thoại</th>
+                  <th>Ngày sinh</th>
+                  <th>Trạng thái</th>
+                  <th>Thời gian</th>
+                  <th>Hành động</th>
+                </tr>
+              </thead>
 
-        <tbody>
-          {lessorRequests.length === 0 && (
-            <tr>
-              <td colSpan="8" className="admin-empty">
-                Không có yêu cầu nào.
-              </td>
-            </tr>
-          )}
+              <tbody>
+                {lessorRequests.length === 0 && (
+                  <tr>
+                    <td colSpan="8" className="admin-empty">
+                      Không có yêu cầu nào.
+                    </td>
+                  </tr>
+                )}
 
-          {lessorRequests.map(req => (
-            <tr key={req.id}>
-              <td>#{req.id}</td>
+                {lessorRequests.map(req => (
+                  <tr key={req.id}>
+                    <td>#{req.id}</td>
 
-              <td>
-                {req.full_name || req.user?.name}
-                <div className="admin-td-sub">User ID: {req.user_id}</div>
-              </td>
+                    <td>
+                      {req.full_name || req.user?.name}
+                      <div className="admin-td-sub">User ID: {req.user_id}</div>
+                    </td>
 
-              <td>{req.email}</td>
+                    <td>{req.email}</td>
 
-              <td>{req.phone_number}</td>
+                    <td>{req.phone_number}</td>
 
-              <td>{req.date_of_birth}</td>
+                    <td>{req.date_of_birth}</td>
 
-              <td>
-                <span className={`admin-badge admin-badge--${req.status}`}>
-                  {req.status}
-                </span>
-              </td>
+                    <td>
+                      <span className={`admin-badge admin-badge--${req.status}`}>
+                        {req.status}
+                      </span>
+                    </td>
 
-              <td>{new Date(req.created_at).toLocaleString("vi-VN")}</td>
+                    <td>{new Date(req.created_at).toLocaleString("vi-VN")}</td>
+                    <td>
+                      <div className="admin-td-actions">
+                        <button
+                          className="admin-link"
+                          onClick={() => setSelectedRequest(req)}
+                        >
+                          Xem chi tiết
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
 
-              <td className="admin-td-actions">
-                <button
-                  className="admin-link"
-                  onClick={() => setSelectedRequest(req)}
-                >
-                  Xem chi tiết
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
+            </table>
+          </div>
+        )}
+      </section>
 
-      </table>
-    </div>
-  )}
-</section>
+      {selectedRequest && (
+        <div className="modal-overlay" onClick={() => setSelectedRequest(null)}>
+          <div className="modal-box" onClick={e => e.stopPropagation()}>
 
-{selectedRequest && (
-  <div className="modal-overlay" onClick={() => setSelectedRequest(null)}>
-    <div className="modal-box" onClick={e => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setSelectedRequest(null)}>×</button>
 
-      <button className="modal-close" onClick={() => setSelectedRequest(null)}>×</button>
+            <h2>Thông tin yêu cầu #{selectedRequest.id}</h2>
 
-      <h2>Thông tin yêu cầu #{selectedRequest.id}</h2>
+            <p><b>Họ tên:</b> {selectedRequest.full_name}</p>
+            <p><b>Email:</b> {selectedRequest.email}</p>
+            <p><b>Số điện thoại:</b> {selectedRequest.phone_number}</p>
+            <p><b>Ngày sinh:</b> {selectedRequest.date_of_birth}</p>
 
-      <p><b>Họ tên:</b> {selectedRequest.full_name}</p>
-      <p><b>Email:</b> {selectedRequest.email}</p>
-      <p><b>Số điện thoại:</b> {selectedRequest.phone_number}</p>
-      <p><b>Ngày sinh:</b> {selectedRequest.date_of_birth}</p>
+            <div className="cccd-preview-wrapper">
+              <div>
+                <p>CCCD mặt trước</p>
+                <img className="cccd-large" src={selectedRequest.cccd_front_url} />
+              </div>
 
-      <div className="cccd-preview-wrapper">
-        <div>
-          <p>CCCD mặt trước</p>
-          <img className="cccd-large" src={selectedRequest.cccd_front_url} />
+              <div>
+                <p>CCCD mặt sau</p>
+                <img className="cccd-large" src={selectedRequest.cccd_back_url} />
+              </div>
+            </div>
+
+            <div className="modal-actions">
+              <button
+                className="admin-btn admin-btn--primary"
+                onClick={() => handleLessorAction(selectedRequest.id, "approve")}
+              >
+                Duyệt
+              </button>
+
+              <button
+                className="admin-btn admin-btn--warning"
+                onClick={() => handleLessorAction(selectedRequest.id, "reject")}
+              >
+                Từ chối
+              </button>
+
+              <button
+                className="admin-btn admin-btn--danger"
+                onClick={() => handleLessorAction(selectedRequest.id, "delete")}
+              >
+                Xoá
+              </button>
+            </div>
+
+          </div>
         </div>
-
-        <div>
-          <p>CCCD mặt sau</p>
-          <img className="cccd-large" src={selectedRequest.cccd_back_url} />
-        </div>
-      </div>
-
-      <div className="modal-actions">
-        <button
-          className="admin-btn admin-btn--primary"
-          onClick={() => handleLessorAction(selectedRequest.id, "approve")}
-        >
-          Duyệt
-        </button>
-
-        <button
-          className="admin-btn admin-btn--warning"
-          onClick={() => handleLessorAction(selectedRequest.id, "reject")}
-        >
-          Từ chối
-        </button>
-
-        <button
-          className="admin-btn admin-btn--danger"
-          onClick={() => handleLessorAction(selectedRequest.id, "delete")}
-        >
-          Xoá
-        </button>
-      </div>
+      )}
 
     </div>
-  </div>
-)}
 
-    </div>
-    
   )
 }

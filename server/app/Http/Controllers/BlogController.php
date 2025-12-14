@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\BlogPost;
 use App\Models\CloudinaryFile;
 use App\Services\CloudinaryService;
+use App\Http\Resources\BlogResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -38,40 +39,42 @@ class BlogController extends Controller
         return $slug;
     }
 
-    // GET api/blogs (xem danh sách blog)
+    // GET api/blogs
     public function index()
     {
-        return BlogPost::with(['tags', 'images'])
+        $blogs = BlogPost::with(['tags', 'images'])
             ->orderBy('published_at', 'DESC')
             ->paginate(10);
+
+        return BlogResource::collection($blogs);
     }
 
-    // GET api/blogs/{slug} (xem chi tiết blog)
+    // GET api/blogs/{slug}
     public function show($slug)
     {
-        return BlogPost::with(['tags', 'images'])
+        $blog = BlogPost::with(['tags', 'images'])
             ->where('slug', $slug)
             ->firstOrFail();
+
+        return new BlogResource($blog);
     }
 
-    // POST api/blogs (tạo blog mới)
+    // POST api/blogs
     public function store(Request $request)
     {
         if ($r = $this->adminOnly()) return $r;
 
         $request->validate([
-            'title' => 'required',
-            'content' => 'required',
-            'excerpt' => 'nullable',
+            'title' => 'required|string',
+            'content' => 'required|string',
+            'excerpt' => 'nullable|string',
             'tags' => 'array',
             'cover' => 'nullable|image|max:4096'
         ]);
 
-        $slug = $this->uniqueSlug($request->title);
-
         $post = BlogPost::create([
             'title' => $request->title,
-            'slug' => $slug,
+            'slug' => $this->uniqueSlug($request->title),
             'excerpt' => $request->excerpt,
             'content' => $request->input('content'),
             'published_at' => now()
@@ -85,54 +88,45 @@ class BlogController extends Controller
             $post->tags()->sync($request->tags);
         }
 
-        return $post->load(['tags', 'images']);
+        return new BlogResource($post->load(['tags', 'images']));
     }
 
-    // POST api/blogs/{id}/update (cập nhật blog)
+    // PUT api/blogs/{id}
     public function update(Request $request, $id)
     {
         if ($r = $this->adminOnly()) return $r;
 
         $post = BlogPost::findOrFail($id);
 
-        // Cho phép update từng field
         $request->validate([
-            'title'   => 'sometimes|string',
+            'title' => 'sometimes|string',
             'excerpt' => 'sometimes|nullable|string',
             'content' => 'sometimes|string',
-            'tags'    => 'sometimes|array',
-            'cover'   => 'sometimes|image|max:4096'
+            'tags' => 'sometimes|array',
+            'cover' => 'sometimes|image|max:4096'
         ]);
 
-        // Nếu có title → update slug nếu đổi
         if ($request->filled('title') && $post->title !== $request->title) {
             $post->slug = $this->uniqueSlug($request->title);
-
         }
 
-        // Update từng field (chỉ field được gửi)
         $post->fill($request->only(['title', 'excerpt', 'content']));
         $post->save();
 
-        // Nếu có ảnh mới
         if ($request->hasFile('cover')) {
             $this->deleteOldImages($post);
             $this->uploadImage($request->file('cover'), $post);
         }
 
-        // Nếu người dùng gửi tags[] thì mới update tags
         if ($request->has('tags')) {
-            if ($request->tags) {
-                $post->tags()->sync($request->tags);
-            } else {
-                $post->tags()->detach();
-            }
+            $request->tags
+                ? $post->tags()->sync($request->tags)
+                : $post->tags()->detach();
         }
 
-        return $post->load(['tags', 'images']);
+        return new BlogResource($post->load(['tags', 'images']));
     }
 
-    // DELETE api/blogs/{id} (xóa blog)
     public function destroy($id)
     {
         if ($r = $this->adminOnly()) return $r;
@@ -143,11 +137,9 @@ class BlogController extends Controller
         $post->tags()->detach();
         $post->delete();
 
-        return ['message' => 'xóa Blog thành công'];
+        return ['message' => 'Xóa blog thành công'];
     }
 
-
-    // Giúp hỗ trợ up ảnh lên Cloudinary và lưu vào DB
     private function uploadImage($file, BlogPost $post)
     {
         $upload = $this->cloud->upload($file->getRealPath(), 'blog_images');

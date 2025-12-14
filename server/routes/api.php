@@ -54,8 +54,7 @@ Route::get('/blogs', [BlogController::class, 'index']);
 Route::get('/blogs/{slug}', [BlogController::class, 'show']);
 Route::get('/blog-tags', [BlogTagController::class, 'index']);
 Route::get('/blog-tags/{slug}', [BlogTagController::class, 'show']);
-
-
+ 
 // ================== LOCATION PUBLIC ==================
 Route::get('/provinces', [LocationController::class, 'getProvinces']);
 Route::get('/districts', [LocationController::class, 'getDistricts']);
@@ -117,6 +116,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // ================== ADMIN (PREFIX /admin) =========================
     // =================================================================
     Route::prefix('admin')->group(function () {
+        // ================== BLOG ADMIN ==================
+        Route::post('/blogs', [BlogController::class, 'store']);
+        Route::put('/blogs/{id}', [BlogController::class, 'update']);
+        Route::delete('/blogs/{id}', [BlogController::class, 'destroy']);
 
         Route::get('/stats', [AdminDashboardController::class, 'stats']);
         Route::get('/posts', [AdminDashboardController::class, 'posts']);
@@ -159,7 +162,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/posts/{postId}/images', [PostImageController::class, 'store']);
     Route::put('/posts/images/{id}', [PostImageController::class, 'update']);
     Route::delete('/posts/images/{id}', [PostImageController::class, 'destroy']);
-
+Route::put('/posts/{id}/status', [PostController::class, 'updateStatus']);
 
     // =================================================================
     // ================== LOCATION (admin) ==============================

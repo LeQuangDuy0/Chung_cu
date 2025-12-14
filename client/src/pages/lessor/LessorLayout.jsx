@@ -22,7 +22,7 @@ export default function LessorLayout() {
   const [user, setUser] = useState(null)
   const [avatarError, setAvatarError] = useState(false)
 
-  // ===== LOAD USER PROFILE (ĐÚNG ROUTE BACKEND) =====
+  // ===== LOAD USER PROFILE =====
   useEffect(() => {
     ;(async () => {
       const token = localStorage.getItem('access_token')
@@ -53,7 +53,7 @@ export default function LessorLayout() {
 
   return (
     <div className="lessor-shell">
-      {/* SIDEBAR TRÁI */}
+      {/* ===== SIDEBAR TRÁI ===== */}
       <aside className="lessor-sidebar">
         <div className="lessor-sidebar__brand">
           <div className="lessor-logo-circle">L</div>
@@ -63,6 +63,7 @@ export default function LessorLayout() {
           </div>
         </div>
 
+        {/* ===== MENU CHÍNH ===== */}
         <div className="lessor-sidebar__group">
           <p className="lessor-menu__title">Chung cư / Phòng trọ</p>
 
@@ -80,17 +81,7 @@ export default function LessorLayout() {
           </NavLink>
         </div>
 
-        <div className="lessor-sidebar__group">
-          <p className="lessor-menu__title">Danh mục hệ thống</p>
-
-          <NavLink to="/lessor/categories" className={navClass}>
-            Danh mục
-          </NavLink>
-          <NavLink to="/lessor/amenities" className={navClass}>
-            Tiện ích
-          </NavLink>
-        </div>
-
+        {/* ===== FOOTER SIDEBAR ===== */}
         <div className="lessor-sidebar__bottom">
           <Link to="/" className="lessor-menu__back">
             ← Về trang người dùng
@@ -99,36 +90,33 @@ export default function LessorLayout() {
         </div>
       </aside>
 
-      {/* MAIN PHẢI */}
+      {/* ===== MAIN PHẢI ===== */}
       <section className="lessor-main">
         {/* TOPBAR */}
         <header className="lessor-main__topbar lessor-main__topbar--with-avatar">
-          {/* AVATAR + TEXT BÊN TRÁI */}
-         <div className="lessor-topbar-left">
-  {avatarSrc ? (
-    <img
-      src={avatarSrc}
-      alt=""
-      className="lessor-avatar"
-      onError={() => setAvatarError(true)}
-    />
-  ) : (
-    <div className="lessor-avatar fallback">
-      {user?.name?.[0]?.toUpperCase() || 'U'}
-    </div>
-  )}
+          <div className="lessor-topbar-left">
+            {avatarSrc ? (
+              <img
+                src={avatarSrc}
+                alt=""
+                className="lessor-avatar"
+                onError={() => setAvatarError(true)}
+              />
+            ) : (
+              <div className="lessor-avatar fallback">
+                {user?.name?.[0]?.toUpperCase() || 'U'}
+              </div>
+            )}
 
-  <div className="lessor-user-info">
-    <strong className="lessor-user-name">
-      {user?.name || 'Người dùng'}
-    </strong>
-  
-  </div>
-</div>
-
+            <div className="lessor-user-info">
+              <strong className="lessor-user-name">
+                {user?.name || 'Người dùng'}
+              </strong>
+            </div>
+          </div>
         </header>
 
-       
+        {/* NỘI DUNG */}
         <Outlet />
       </section>
     </div>

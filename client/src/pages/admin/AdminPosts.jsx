@@ -59,15 +59,15 @@ export default function AdminPosts() {
         return
       }
 
-      const res = await fetch(`/api/posts/${id}`, {
-        method: 'PUT', // ← ĐỔI TỪ PATCH SANG PUT
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status }),
-      })
+      const res = await fetch(`/api/posts/${id}/status`, {
+  method: 'PUT',
+  headers: {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${token}`,
+  },
+  body: JSON.stringify({ status }),
+})
+
 
       const text = await res.text()
       let data

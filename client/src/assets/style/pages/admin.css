@@ -1451,11 +1451,7 @@
   min-width: 600px;
 }
 
-.admin-table th,
-.admin-table td {
-  padding: 12px 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
+ 
 
 .admin-table th {
   font-weight: 600;
@@ -1606,4 +1602,81 @@
   overflow-y: auto;
   color: white;
   box-shadow: 0 0 15px #0005;
+}
+@media (max-width: 768px) {
+  .admin-table th:last-child,
+  .admin-table td:last-child {
+    min-width: 100px;
+    padding-right: 12px;
+  }
+
+  .admin-td-actions {
+    gap: 8px;
+  }
+}
+/* ===== FIX CỘT HÀNH ĐỘNG CHUẨN HÀNG ===== */
+
+/* Cố định cột hành động */
+.admin-table th:last-child,
+.admin-table td:last-child {
+  width: 120px;
+  min-width: 120px;
+  text-align: right;
+  vertical-align: middle; /* QUAN TRỌNG */
+  padding-right: 16px;
+}
+
+/* Wrapper actions */
+.admin-td-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Link / button trong actions */
+.admin-td-actions .admin-link,
+.admin-td-actions button {
+  line-height: 1;
+  padding: 0;
+  white-space: nowrap;
+}
+/* ===== FIX VẠCH KẺ NGANG ĐỒNG ĐỀU ===== */
+
+/* bỏ border ở cell */
+.admin-table th,
+.admin-table td {
+  border-bottom: none !important;
+}
+
+/* vạch kẻ chỉ vẽ ở hàng */
+.admin-table tbody tr {
+  position: relative;
+}
+
+/* vạch kẻ chuẩn, chạy full width */
+.admin-table tbody tr::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: rgba(30, 41, 59, 0.9);
+  pointer-events: none;
+}
+.admin-table th:last-child,
+.admin-table td:last-child {
+  width: 120px;
+  min-width: 120px;
+  text-align: right;
+  vertical-align: middle;
+  padding-right: 16px;
+}
+
+.admin-td-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
 }

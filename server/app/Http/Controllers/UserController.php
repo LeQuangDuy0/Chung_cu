@@ -343,54 +343,56 @@ public function requestLessor(Request $request)
         ]);
     }
 
-   public function adminLessorRequests()
-{
-    $admin = Auth::user();
+    public function adminLessorRequests()
+    {
+        $admin = Auth::user();
 
-    if (!$admin || $admin->role !== 'admin') {
+        if (!$admin || $admin->role !== 'admin') {
+            return response()->json([
+                'status' => false,
+                'message' => 'Chỉ admin mới xem được danh sách yêu cầu.',
+            ], 403);
+        }
+
+      $requests = LessorRequest::with('user')
+    ->where('status', 'pending')
+    ->orderBy('created_at', 'desc')
+    ->get();
+
+
         return response()->json([
-            'status' => false,
-            'message' => 'Chỉ admin mới xem được danh sách yêu cầu.',
-        ], 403);
+            'status' => true,
+            'data' => $requests->map(function ($req) {
+                return [
+                    'id' => $req->id,
+                    'user_id' => $req->user_id,
+
+                    // ====== THÔNG TIN USER ======
+                    'full_name' => $req->full_name,
+                    'email' => $req->email,
+                    'phone_number' => $req->phone_number,
+                    'date_of_birth' => $req->date_of_birth,
+
+                    // ====== ẢNH CCCD ======
+                    'cccd_front_url' => $req->cccd_front_url,
+                    'cccd_back_url'  => $req->cccd_back_url,
+
+                    // ====== TRẠNG THÁI ======
+                    'status' => $req->status,
+                    'rejection_reason' => $req->rejection_reason,
+                    'created_at' => $req->created_at->format('H:i:s d/m/Y'),
+
+                    // Thông tin user
+                    'user' => [
+                        'id' => $req->user->id,
+                        'name' => $req->user->name,
+                        'email' => $req->user->email,
+                        'phone_number' => $req->user->phone_number,
+                    ],
+                ];
+            }),
+        ]);
     }
-
-    $requests = \App\Models\LessorRequest::with('user')
-        ->orderBy('created_at', 'desc')
-        ->get();
-
-    return response()->json([
-        'status' => true,
-        'data' => $requests->map(function ($req) {
-            return [
-                'id' => $req->id,
-                'user_id' => $req->user_id,
-
-                // ====== THÔNG TIN USER ======
-                'full_name' => $req->full_name,
-                'email' => $req->email,
-                'phone_number' => $req->phone_number,
-                'date_of_birth' => $req->date_of_birth,
-
-                // ====== ẢNH CCCD ======
-                'cccd_front_url' => $req->cccd_front_url,
-                'cccd_back_url'  => $req->cccd_back_url,
-
-                // ====== TRẠNG THÁI ======
-                'status' => $req->status,
-                'rejection_reason' => $req->rejection_reason,
-                'created_at' => $req->created_at->format('H:i:s d/m/Y'),
-
-                // Thông tin user
-                'user' => [
-                    'id' => $req->user->id,
-                    'name' => $req->user->name,
-                    'email' => $req->user->email,
-                    'phone_number' => $req->user->phone_number,
-                ],
-            ];
-        }),
-    ]);
-}
 
 
     // POST /api/admin/lessor-requests/{id}/approve

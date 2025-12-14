@@ -1830,4 +1830,68 @@
   background: #3b82f6;
   color: white;
 }
- 
+ /* ===== CONTAINER ===== */
+.pd-chat-split {
+  position: relative;
+  display: flex;
+  height: 46px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(148,163,184,.25);
+  background: rgba(15,23,42,.6);
+}
+
+/* ===== BUTTON CHUNG ===== */
+.pd-chat-btn {
+  flex: 1;
+  position: relative;
+  z-index: 1;
+  border: none;
+  background: transparent;
+  color: #e5e7eb;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition:
+    all 0.45s cubic-bezier(.4,0,.2,1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* divider */
+.pd-chat-btn + .pd-chat-btn {
+  border-left: 1px solid rgba(148,163,184,.25);
+}
+
+/* ===== ZALO HOVER – FULL WIDTH ===== */
+.pd-chat-split:has(.pd-chat-btn--zalo:hover) .pd-chat-btn--zalo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  background: #2563eb;
+  color: #fff;
+  z-index: 2;
+  border-radius: 14px;
+}
+
+.pd-chat-split:has(.pd-chat-btn--zalo:hover) .pd-chat-btn--messenger {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ===== MESSENGER HOVER – FULL WIDTH ===== */
+.pd-chat-split:has(.pd-chat-btn--messenger:hover) .pd-chat-btn--messenger {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  background: linear-gradient(135deg,#9333ea,#2563eb);
+  color: #fff;
+  z-index: 2;
+  border-radius: 14px;
+}
+
+.pd-chat-split:has(.pd-chat-btn--messenger:hover) .pd-chat-btn--zalo {
+  opacity: 0;
+  pointer-events: none;
+}
