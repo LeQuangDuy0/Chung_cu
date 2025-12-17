@@ -1,5 +1,6 @@
 // src/pages/lessor/LessorCategories.jsx
 import { useEffect, useState } from 'react'
+import { API_URL } from '@/config/api.js';
 
 export default function LessorCategories() {
   //  STATE 
@@ -31,7 +32,7 @@ export default function LessorCategories() {
          */
         const token = localStorage.getItem('access_token')
         const res = await fetch(
-          `/api/lessor/categories?${params.toString()}`,
+          `${API_URL}/lessor/categories?${params.toString()}`,
           {
             signal: controller.signal,
             headers: {
@@ -107,8 +108,8 @@ export default function LessorCategories() {
       }
 
       const url = editingItem
-        ? `/api/categories/${editingItem.id}`
-        : '/api/categories'
+        ? `${API_URL}/categories/${editingItem.id}`
+        : `${API_URL}/categories`
       const method = editingItem ? 'PUT' : 'POST'
 
       const res = await fetch(url, {
@@ -160,7 +161,7 @@ export default function LessorCategories() {
         return
       }
 
-      const res = await fetch(`/api/categories/${id}`, {
+      const res = await fetch(`${API_URL}/categories/${id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

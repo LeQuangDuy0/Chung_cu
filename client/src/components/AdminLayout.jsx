@@ -3,7 +3,7 @@ import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom'
 import '@/assets/style/pages/admin.css'
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api'
+  (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000') + '/api'
 
 async function safeJson(res) {
   const text = await res.text()

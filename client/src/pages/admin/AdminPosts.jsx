@@ -1,6 +1,7 @@
 // src/pages/admin/AdminPosts.jsx
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { API_URL } from '@/config/api.js';
 
 export default function AdminPosts() {
   const [items, setItems] = useState([])
@@ -18,7 +19,7 @@ export default function AdminPosts() {
 
         const token = localStorage.getItem('access_token')
 
-        const res = await fetch('/api/posts', {
+        const res = await fetch(`${API_URL}/posts`, {
           headers: {
             Accept: 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -59,7 +60,7 @@ export default function AdminPosts() {
         return
       }
 
-      const res = await fetch(`/api/posts/${id}/status`, {
+      const res = await fetch(`${API_URL}/posts/${id}/status`, {
   method: 'PUT',
   headers: {
     'Content-Type': 'application/json',
@@ -103,7 +104,7 @@ export default function AdminPosts() {
         return
       }
 
-      const res = await fetch(`/api/posts/${id}`, {
+      const res = await fetch(`${API_URL}/posts/${id}`, {
         method: 'DELETE',
         headers: {
           Accept: 'application/json',

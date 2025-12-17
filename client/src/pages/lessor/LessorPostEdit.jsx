@@ -1,6 +1,7 @@
 // src/pages/lessor/LessorPostEdit.jsx
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { API_URL } from '@/config/api.js';
 
 export default function LessorPostEdit() {
   const { id } = useParams()
@@ -41,13 +42,13 @@ export default function LessorPostEdit() {
         const token = localStorage.getItem('access_token')
 
         const [postRes, catRes] = await Promise.all([
-          fetch(`/api/posts/${id}`, {
+          fetch(`${API_URL}/posts/${id}`, {
             headers: {
               Accept: 'application/json',
               ...(token ? { Authorization: `Bearer ${token}` } : {}),
             },
           }),
-          fetch('/api/categories', {
+          fetch(`${API_URL}/categories`, {
             headers: { Accept: 'application/json' },
           }),
         ])
@@ -160,7 +161,7 @@ export default function LessorPostEdit() {
         formData.append('remove_image_ids[]', id)
       })
 
-      const res = await fetch(`/api/posts/${id}`, {
+      const res = await fetch(`${API_URL}/posts/${id}`, {
         method: 'POST',
         headers: {
           Accept: 'application/json',

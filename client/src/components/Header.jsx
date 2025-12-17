@@ -8,7 +8,7 @@ import UserSettingsModal from '../components/UserSettingsModal'
 import { Heart } from 'lucide-react';
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api'
+  (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000') + '/api'
 
 // Safe JSON
 async function safeJson(res) {
@@ -98,7 +98,7 @@ export default function Header() {
   // ================= LOAD USER =================
   const fetchUserFromApi = async token => {
     try {
-      const res = await fetch('/api/user', {
+      const res = await fetch(`${API_BASE_URL}/user`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       const data = await res.json()
@@ -241,7 +241,7 @@ export default function Header() {
 
     try {
       if (token) {
-        await fetch('/api/logout', {
+        await fetch(`${API_BASE_URL}/logout`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` }
         })

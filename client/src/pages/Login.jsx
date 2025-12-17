@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import '../assets/style/pages/login.css'
+import { API_URL } from '../config/api.js'
 
 export default function Login({ onClose, onSwitchToRegister }) {
   const location = useLocation()
@@ -38,7 +39,7 @@ export default function Login({ onClose, onSwitchToRegister }) {
     try {
       setLoading(true)
 
-      const res = await fetch('/api/login', {
+      const res = await fetch(`${API_URL}/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -81,7 +82,7 @@ export default function Login({ onClose, onSwitchToRegister }) {
       }
 
       // 🔐 VERIFY TOKEN NGAY (BẮT LỖI SỚM)
-      const check = await fetch('/api/user/profile', {
+      const check = await fetch(`${API_URL}/user/profile`, {
         headers: {
           Accept: 'application/json',
           Authorization: `Bearer ${token}`,

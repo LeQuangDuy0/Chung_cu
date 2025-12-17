@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import '@/assets/style/pages/lessor/lessor.css'
+import { API_URL } from '@/config/api.js';
 
 // ------ helper: parse JSON an toàn ------
 async function safeJson(res) {
@@ -54,7 +55,7 @@ export default function LessorDashboard() {
       try {
         // API: GET /api/lessor/stats hoặc tính từ posts của lessor
         const token = localStorage.getItem('access_token')
-        const res = await fetch('/api/lessor/stats', {
+        const res = await fetch(`${API_URL}/lessor/stats`, {
           headers: {
             Accept: 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -64,7 +65,7 @@ export default function LessorDashboard() {
 
         if (!res.ok) {
           // Nếu không có endpoint, tính từ posts
-          const postsRes = await fetch('/api/posts', {
+          const postsRes = await fetch(`${API_URL}/posts`, {
             headers: {
               Accept: 'application/json',
               ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -96,7 +97,7 @@ export default function LessorDashboard() {
       try {
         // API: GET /api/categories
         // Gợi ý response: { data: [{id, name, slug}, ...] }
-        const res = await fetch('/api/categories')
+        const res = await fetch(`${API_URL}/categories`)
         const data = await safeJson(res)
         if (!res.ok) return
 
@@ -129,7 +130,7 @@ export default function LessorDashboard() {
 
         // API: GET /api/posts?my_posts=1 hoặc /api/lessor/posts
         // Lessor chỉ xem bài đăng của chính mình
-        const res = await fetch(`/api/lessor/posts?${params.toString()}`, {
+        const res = await fetch(`${API_URL}/lessor/posts?${params.toString()}`, {
 
           headers: {
             Accept: 'application/json',
@@ -163,7 +164,7 @@ export default function LessorDashboard() {
         const token = localStorage.getItem('access_token')
         if (!token) return
 
-        const res = await fetch('/api/lessor/reviews', {
+        const res = await fetch(`${API_URL}/lessor/reviews`, {
           headers: {
             Accept: 'application/json',
             Authorization: `Bearer ${token}`,

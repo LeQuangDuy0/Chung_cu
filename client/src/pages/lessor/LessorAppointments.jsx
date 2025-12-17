@@ -1,5 +1,6 @@
  // src/pages/lessor/LessorAppointments.jsx
 import { useEffect, useState } from 'react'
+import { API_URL } from '@/config/api.js';
 
 export default function LessorAppointments() {
   const [appointments, setAppointments] = useState([])
@@ -23,7 +24,7 @@ export default function LessorAppointments() {
         return
       }
 
-      const res = await fetch('/api/appointments/owner', {
+      const res = await fetch(`${API_URL}/appointments/owner`, {
         headers: {
           Accept: 'application/json',
           Authorization: `Bearer ${token}`,
@@ -55,7 +56,7 @@ export default function LessorAppointments() {
     try {
       setActionLoading(id)
       const token = localStorage.getItem('access_token')
-      const res = await fetch(`/api/appointments/${id}/accept`, {
+      const res = await fetch(`${API_URL}/appointments/${id}/accept`, {
         method: 'PATCH',
         headers: {
           Accept: 'application/json',
@@ -90,7 +91,7 @@ export default function LessorAppointments() {
     try {
       setActionLoading(id)
       const token = localStorage.getItem('access_token')
-      const res = await fetch(`/api/appointments/${id}/decline`, {
+      const res = await fetch(`${API_URL}/appointments/${id}/decline`, {
         method: 'PATCH',
         headers: {
           Accept: 'application/json',

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 
 // giống các page khác
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api'
+  (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000') + '/api'
 
 export default function AdminReviews() {
   const [items, setItems] = useState([])

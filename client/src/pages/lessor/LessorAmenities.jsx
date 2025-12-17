@@ -1,5 +1,6 @@
 // src/pages/lessor/LessorAmenities.jsx
 import { useEffect, useState } from 'react'
+import { API_URL } from '@/config/api.js';
 
 export default function LessorAmenities() {
   // STATE
@@ -31,7 +32,7 @@ export default function LessorAmenities() {
          */
         const token = localStorage.getItem('access_token')
         const res = await fetch(
-          `/api/lessor/amenities?${params.toString()}`,
+          `${API_URL}/lessor/amenities?${params.toString()}`,
           {
             signal: controller.signal,
             headers: {
@@ -105,8 +106,8 @@ export default function LessorAmenities() {
       }
 
       const url = editingItem
-        ? `/api/amenities/${editingItem.id}`
-        : '/api/amenities'
+        ? `${API_URL}/amenities/${editingItem.id}`
+        : `${API_URL}/amenities`
       const method = editingItem ? 'PUT' : 'POST'
 
       const res = await fetch(url, {
@@ -157,7 +158,7 @@ export default function LessorAmenities() {
         return
       }
 
-      const res = await fetch(`/api/amenities/${id}`, {
+      const res = await fetch(`${API_URL}/amenities/${id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

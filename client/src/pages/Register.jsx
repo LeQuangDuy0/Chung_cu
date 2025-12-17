@@ -1,6 +1,7 @@
 // src/components/Register.jsx
 import { useEffect, useState } from 'react'
 import '../assets/style/pages/register.css'
+import { API_URL } from '../config/api.js'
 
 export default function Register({ onClose , onSwitchToLogin }) {
   const [form, setForm] = useState({
@@ -97,7 +98,7 @@ export default function Register({ onClose , onSwitchToLogin }) {
        * Lỗi validate (422):
        *  { status: false, message: "Lỗi xác thực dữ liệu", errors: { field: [...] } }
        */
-      const res = await fetch('/api/register', {
+      const res = await fetch(`${API_URL}/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -28,7 +28,7 @@ function normalizeImageUrl(source) {
 
 // ===== CẤU HÌNH API =====
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api'
+  (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000') + '/api'
 
 /** Bộ lọc giá & diện tích cho Ký túc xá / Dorm */
 const PRICE = [

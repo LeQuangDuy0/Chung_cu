@@ -1,6 +1,7 @@
 import { NavLink, Outlet, Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import '@/assets/style/pages/lessor/lessor.css'
+import { API_URL } from '@/config/api.js';
 
 // ===== helper build avatar url =====
 function buildAvatarUrl(avatar) {
@@ -8,7 +9,7 @@ function buildAvatarUrl(avatar) {
   if (avatar.startsWith('http')) return avatar
 
   const base =
-    import.meta.env.VITE_API_URL?.replace('/api', '') ||
+    import.meta.env.VITE_API_URL ||
     'http://127.0.0.1:8000'
 
   return `${base}/storage/${avatar}`
@@ -29,7 +30,7 @@ export default function LessorLayout() {
       if (!token) return
 
       try {
-        const res = await fetch('/api/user/profile', {
+        const res = await fetch(`${API_URL}/user/profile`, {
           headers: {
             Accept: 'application/json',
             Authorization: `Bearer ${token}`,

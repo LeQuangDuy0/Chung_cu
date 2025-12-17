@@ -1,5 +1,6 @@
 // src/pages/admin/AdminUsers.jsx
 import { useEffect, useState } from 'react'
+import { API_URL } from '@/config/api.js';
 
 // ========================
 // FIX AVATAR FUNCTION
@@ -33,7 +34,7 @@ export default function AdminUsers() {
         const token = localStorage.getItem('access_token')
         if (!token) throw new Error('Bạn chưa đăng nhập admin.')
 
-        const res = await fetch('/api/admin/users', {
+        const res = await fetch(`${API_URL}/admin/users`, {
           headers: {
             Authorization: `Bearer ${token}`,
             Accept: 'application/json',
@@ -64,7 +65,7 @@ export default function AdminUsers() {
       const token = localStorage.getItem('access_token')
       if (!token) throw new Error('Bạn chưa đăng nhập admin.')
 
-      const res = await fetch(`/api/admin/users/${userId}/role`, {
+      const res = await fetch(`${API_URL}/admin/users/${userId}/role`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -108,7 +109,7 @@ export default function AdminUsers() {
 
       // Nếu user là lessor → tải yêu cầu lessor
       if (user.role === "lessor") {
-        const res = await fetch(`/api/admin/lessor-requests`, {
+        const res = await fetch(`${API_URL}/admin/lessor-requests`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 

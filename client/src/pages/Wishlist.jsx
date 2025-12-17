@@ -6,7 +6,7 @@ import '../assets/style/style.css'
 
 // ===== CẤU HÌNH API =====
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api'
+  (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000') + '/api'
 
 // Chuẩn hoá mọi kiểu object ảnh thành URL string
 function normalizeImageUrl(source) {
@@ -89,7 +89,7 @@ export default function Wishlist() {
         let ids = []
         if (token) {
           try {
-            const res = await fetch('http://localhost:8000/api/saved-posts/ids', {
+            const res = await fetch(`${API_BASE_URL}/saved-posts/ids`, {
               headers: {
                 Authorization: `Bearer ${token}`,
                 Accept: 'application/json',

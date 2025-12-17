@@ -1,6 +1,7 @@
 // src/pages/admin/AdminPostEdit.jsx
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { API_URL } from '@/config/api.js';
 
 export default function AdminPostEdit() {
   const { id } = useParams()
@@ -31,13 +32,13 @@ export default function AdminPostEdit() {
         const token = localStorage.getItem('access_token')
 
         const [postRes, catRes] = await Promise.all([
-          fetch(`/api/posts/${id}`, {
+          fetch(`${API_URL}/posts/${id}`, {
             headers: {
               Accept: 'application/json',
               ...(token ? { Authorization: `Bearer ${token}` } : {}),
             },
           }),
-          fetch('/api/categories', {
+          fetch(`${API_URL}/categories`, {
             headers: { Accept: 'application/json' },
           }),
         ])
@@ -118,7 +119,7 @@ export default function AdminPostEdit() {
       const token = localStorage.getItem('access_token')
       if (!token) throw new Error('Bạn chưa đăng nhập.')
 
-      const res = await fetch(`/api/posts/${id}`, {
+      const res = await fetch(`${API_URL}/posts/${id}`, {
         method: 'PUT', // PostController@update
         headers: {
           'Content-Type': 'application/json',

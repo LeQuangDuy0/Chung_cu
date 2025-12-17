@@ -1,6 +1,7 @@
 // client/src/pages/ResetPassword.jsx
 import { useState } from 'react'
 import { useSearchParams, useNavigate, Link } from 'react-router-dom'
+import { API_URL } from '../config/api.js';
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams()
@@ -48,7 +49,7 @@ export default function ResetPassword() {
     try {
       setLoading(true)
 
-      const res = await fetch('/api/reset-password', {
+      const res = await fetch(`${API_URL}/reset-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

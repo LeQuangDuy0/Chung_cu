@@ -16,7 +16,7 @@ class ChatbotController extends Controller
     public function __construct()
     {
         $this->apiKey = env('GEMINI_API_KEY');
-        $this->geminiUrl = "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key={$this->apiKey}";
+        $this->geminiUrl = "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key={$this->apiKey}";
     }
 
     // GET api/chatbot (xử lý nhận tin & trả lời)

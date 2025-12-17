@@ -31,7 +31,7 @@ function normalizeImageUrl(source) {
 }
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api'
+  (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000') + '/api'
 
 /** ====== WISHLIST HELPERS - DỀ DÀI VỀ DATABASE API ====== */
 async function getWishlistIdsFromAPI(token) {
@@ -100,9 +100,9 @@ async function toggleWishlistAPI(postId, token) {
     const isSaved = ids.includes(Number(postId))
     
     const url = isSaved
-      ? `http://localhost:8000/api/saved-posts/${postId}`
-      : `http://localhost:8000/api/saved-posts/${postId}`
-    
+      ? `${API_BASE_URL}/saved-posts/${postId}`
+      : `${API_BASE_URL}/saved-posts/${postId}`
+
     const method = isSaved ? 'DELETE' : 'POST'
     
     const res = await fetch(url, {

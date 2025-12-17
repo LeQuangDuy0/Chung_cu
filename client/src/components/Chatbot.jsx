@@ -5,6 +5,7 @@ import {
     Lightbulb, ChevronRight
 } from 'lucide-react';
 import '../assets/style/Chatbot.css';
+import { API_URL } from '../config/api.js';
 
 const Chatbot = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -58,7 +59,7 @@ const Chatbot = () => {
 
         try {
             // Giả lập API call (Thay thế bằng URL thật của bạn)
-            const response = await axios.post('http://localhost:8000/api/chatbot', {
+            const response = await axios.post(`${API_URL}/chatbot`, {
                 message: userMsg.text
             });
 

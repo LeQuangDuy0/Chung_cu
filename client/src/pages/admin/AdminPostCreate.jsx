@@ -1,6 +1,7 @@
 // src/pages/admin/AdminPostCreate.jsx
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { API_URL } from '@/config/api.js';
 
 export default function AdminPostCreate() {
   const navigate = useNavigate()
@@ -46,10 +47,10 @@ export default function AdminPostCreate() {
         setError('')
 
         const [catRes, ameRes, envRes, provRes] = await Promise.all([
-          fetch('/api/categories'),
-          fetch('/api/amenities'),
-          fetch('/api/environment-features'),
-          fetch('/api/provinces'),
+          fetch(`${API_URL}/categories`),
+          fetch(`${API_URL}/amenities`),
+          fetch(`${API_URL}/environment-features`),
+          fetch(`${API_URL}/provinces`),
         ])
 
         const [catJson, ameJson, envJson, provJson] = await Promise.all([
@@ -86,7 +87,7 @@ export default function AdminPostCreate() {
 
     async function loadDistricts() {
       try {
-        const res = await fetch(`/api/districts?province_id=${provinceId}`)
+        const res = await fetch(`${API_URL}/districts?province_id=${provinceId}`)
         const json = await res.json()
         setDistricts(json.data || json || [])
         setWards([])
@@ -110,7 +111,7 @@ export default function AdminPostCreate() {
 
     async function loadWards() {
       try {
-        const res = await fetch(`/api/wards?district_id=${districtId}`)
+        const res = await fetch(`${API_URL}/wards?district_id=${districtId}`)
         const json = await res.json()
         setWards(json.data || json || [])
         setForm(f => ({ ...f, ward_id: '' }))
@@ -228,7 +229,7 @@ export default function AdminPostCreate() {
         fd.append(`environment_features[${index}]`, id)
       })
 
-      const res = await fetch('/api/posts', {
+      const res = await fetch(`${API_URL}/posts`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -275,7 +276,7 @@ export default function AdminPostCreate() {
           imgFd.append('image', file) 
           imgFd.append('sort_order', index)
 
-          return fetch(`/api/posts/${newPostId}/images`, {
+          return fetch(`${API_URL}/posts/${newPostId}/images`, {
             method: 'POST',
             headers: {
               Authorization: `Bearer ${token}`,

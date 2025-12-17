@@ -1,6 +1,7 @@
 // src/pages/lessor/LessorPosts.jsx
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { API_URL } from '@/config/api.js';
 
 export default function LessorPosts() {
   const [items, setItems] = useState([])
@@ -23,7 +24,7 @@ export default function LessorPosts() {
           return
         }
 
-        const res = await fetch('/api/posts?my_posts=1', {
+        const res = await fetch(`${API_URL}/posts?my_posts=1`, {
           headers: {
             Accept: 'application/json',
             Authorization: `Bearer ${token}`,
@@ -66,7 +67,7 @@ export default function LessorPosts() {
         return
       }
 
-      const res = await fetch(`/api/posts/${id}`, {
+      const res = await fetch(`${API_URL}/posts/${id}`, {
         method: 'DELETE',
         headers: {
           Accept: 'application/json',

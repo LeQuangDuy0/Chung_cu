@@ -1,5 +1,6 @@
 // src/pages/lessor/LessorReviews.jsx
 import { useEffect, useState } from 'react'
+import { API_URL } from '@/config/api.js';
 
 export default function LessorReviews() {
   const [items, setItems] = useState([])
@@ -19,7 +20,7 @@ export default function LessorReviews() {
           return
         }
 
-        const res = await fetch('/api/lessor/reviews', {
+        const res = await fetch(`${API_URL}/lessor/reviews`, {
           headers: {
             Accept: 'application/json',
             Authorization: `Bearer ${token}`,

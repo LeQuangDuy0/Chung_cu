@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { API_URL } from '../config/api.js';
 
 export default function UserSettingsModal({ user, onClose, onUpdated }) {
 
@@ -92,7 +93,7 @@ const maxBirthDate = `${year}-${month}-${day}`
       fd.append("cccd_front", cccdFront)
       fd.append("cccd_back", cccdBack)
 
-      const res = await fetch("/api/user/request-lessor", {
+      const res = await fetch(`${API_URL}/user/request-lessor`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: fd
@@ -164,7 +165,7 @@ window.location.reload();
 
       // UPDATE PROFILE
       if (basicInfoChanged) {
-        const res = await fetch("/api/user/profile", {
+        const res = await fetch(`${API_URL}/user/profile`, {
           method: "PUT",
           headers: jsonHeaders,
           body: JSON.stringify({
@@ -187,7 +188,7 @@ window.location.reload();
         fd.append("avatar", avatarFile)
         fd.append("current_password", form.current_password)
 
-        const res = await fetch("/api/user/profile/avatar", {
+        const res = await fetch(`${API_URL}/user/profile/avatar`, {
           method: "POST",
           headers: authHeaders,
           body: fd
@@ -201,7 +202,7 @@ window.location.reload();
 
       // CHANGE PASSWORD
       if (wantChangePassword) {
-        const res = await fetch("/api/user/change-password", {
+        const res = await fetch(`${API_URL}/user/change-password`, {
           method: "PUT",
           headers: jsonHeaders,
           body: JSON.stringify({
