@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Review;
 use App\Models\SavedPost;
 
+
 class AdminDashboardController extends Controller
 {
     /**
@@ -30,6 +31,18 @@ class AdminDashboardController extends Controller
                 'total_saved'   => $totalSaved,
             ],
         ]);
+
+        // Tính tổng cột 'views' của tất cả các bài viết
+    $totalViews = Post::sum('views'); 
+    
+    $totalPosts = Post::count();
+    $totalLandlords = User::where('role', 'lessor')->count();
+
+    return response()->json([
+        'posts' => $totalPosts,
+        'landlords' => $totalLandlords,
+        'views' => $totalViews // <--- Trả về tổng view thật
+    ]);
     }
 
     /**
@@ -91,4 +104,5 @@ class AdminDashboardController extends Controller
             ],
         ]);
     }
+    
 }

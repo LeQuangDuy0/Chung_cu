@@ -1,1135 +1,845 @@
-/* =========================================================
-   HOME (Homes) - GLASS / GRADIENT STYLE MỚI
-   ========================================================= */
+/* =========================================
+   1. GLOBAL SETTINGS & VARIABLES
+   ========================================= */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-.pthome {
- 
-  --homes-accent1: #22c55e;
-  --homes-accent2: #38bdf8;
-  --homes-accent3: #f97316;
-  --homes-card: rgba(15, 23, 42, 0.85);
-  --homes-card-border: rgba(148, 163, 184, 0.4);
-  --homes-card-soft: rgba(15, 23, 42, 0.7);
-  --homes-soft-text: #9ca3af;
-  --homes-bright-text: #e5e7eb;
-
- 
-  min-height: 100vh;
-  color: #e5e7eb;
-  padding-bottom: 48px;
+:root {
+  --primary-color: #2563eb;       /* Blue 600 */
+  --primary-hover: #1d4ed8;       /* Blue 700 */
+  --secondary-color: #60a5fa;     /* Blue 400 */
+  --success-color: #22c55e;       /* Green 500 */
+  --bg-dark: #0B1120;             /* Nền chính (Deep Navy) */
+  --bg-card: rgba(30, 41, 59, 0.4); /* Nền kính mờ */
+  --text-light: #e2e8f0;          /* Chữ trắng sáng */
+  --text-gray: #94a3b8;           /* Chữ xám */
+  --border-light: rgba(255, 255, 255, 0.08);
 }
 
-/* full width không đụng đến body */
-.u-fullbleed {
-    margin:0 10px;
-}
-
-/* container chung */
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 16px;
-}
-
-/* ================== HERO ================== */
-
-.homes-hero {
-  padding: 32px 0 72px;
-  background: transparent;
-}
-
-.homes-hero-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1.2fr);
-  gap: 28px;
-  align-items: stretch;
-
-  border-radius: 28px;
-  background: linear-gradient(
-      135deg,
-      rgba(15, 23, 42, 0.85),
-      rgba(15, 23, 42, 0.9)
-    );
-  border: 1px solid rgba(148, 163, 184, 0.4);
-  box-shadow:
-    0 40px 80px rgba(15, 23, 42, 0.8),
-    0 0 0 1px rgba(15, 23, 42, 0.8);
-  backdrop-filter: blur(22px);
-  padding: 22px 22px 22px 22px;
-  position: relative;
-  overflow: hidden;
-}
-
-/* những vệt gradient trang trí */
-.homes-hero-grid::before,
-.homes-hero-grid::after {
-  content: '';
-  position: absolute;
-  border-radius: 999px;
-  filter: blur(26px);
-  opacity: 0.6;
-  pointer-events: none;
-}
-.homes-hero-grid::before {
-  width: 260px;
-  height: 260px;
-  background: radial-gradient(circle, var(--homes-accent2), transparent 60%);
-  top: -80px;
-  left: -60px;
-}
-.homes-hero-grid::after {
-  width: 220px;
-  height: 220px;
-  background: radial-gradient(circle, var(--homes-accent3), transparent 60%);
-  bottom: -60px;
-  right: -40px;
-}
-
-/* cột trái hero */
-.homes-hero-main {
-  position: relative;
-  z-index: 1;
-}
-
-.homes-hero-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.9);
-  border: 1px solid rgba(148, 163, 184, 0.7);
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--homes-soft-text);
-  margin-bottom: 10px;
-}
-
-.homes-hero-pill::before {
-  content: '';
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  background: #22c55e;
-  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.35);
-}
-
-.homes-hero-main h1 {
-  margin: 0 0 10px;
-  font-size: 30px;
-  line-height: 1.25;
-  font-weight: 800;
-  color: #f9fafb;
-}
-
-.homes-hero-main p {
-  margin: 0 0 20px;
-  font-size: 14px;
-  color: var(--homes-soft-text);
-}
-
-/* form tìm kiếm */
-.homes-search {
-  border-radius: 18px;
-  padding: 12px 14px;
-  background: radial-gradient(circle at 0 0, rgba(248, 250, 252, 0.1), transparent 60%);
-  border: 1px solid rgba(148, 163, 184, 0.6);
-}
-
-.homes-search-row {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 8px;
-}
-
-.homes-search-input {
-  flex: 1 1 260px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  border: 1px solid rgba(148, 163, 184, 0.7);
-  background: radial-gradient(circle at 0 0, rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.95));
-}
-
-.homes-search-input .icon {
-  font-size: 14px;
-  opacity: 0.8;
-}
-
-.homes-search-input input {
-  border: 0;
-  outline: none;
-  background: transparent;
-  width: 100%;
-  font-size: 14px;
-  color: #e5e7eb;
-}
-
-.homes-search-input input::placeholder {
-  color: #6b7280;
-}
-
-.homes-search-filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.homes-search-filters select {
-  flex: 1 0 120px;
-  min-width: 120px;
-  border-radius: 9px;
-  border: 1px solid rgba(148, 163, 184, 0.7);
-  background: rgba(15, 23, 42, 0.9);
-  color: #e5e7eb;
-  padding: 6px 10px;
-  font-size: 13px;
-}
-
-.homes-search-filters select option {
-  color: #0f172a;
-}
-
-/* button chung */
-
-.homes-btn {
-  border-radius: 999px;
-  padding: 9px 18px;
-  border: 1px solid var(--homes-accent2);
-  background: transparent;
-  color: #e5e7eb;
-  cursor: pointer;
-  font-weight: 700;
-  font-size: 13px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  transition:
-    background 0.18s ease,
-    transform 0.18s ease,
-    box-shadow 0.18s ease,
-    border-color 0.18s ease,
-    color 0.18s ease;
-}
-
-.homes-btn--primary {
-  background: linear-gradient(135deg, var(--homes-accent2), var(--homes-accent1));
-  border-color: transparent;
-  color: #0f172a;
-  box-shadow: 0 14px 30px rgba(8, 47, 73, 0.8);
-}
-
-.homes-btn--ghost {
-  background: rgba(15, 23, 42, 0.9);
-  border-color: rgba(148, 163, 184, 0.7);
-}
-
-.homes-btn--light {
-  background: #f9fafb;
-  color: #0f172a;
-  border-color: transparent;
-}
-
-.homes-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.9);
-}
-
-/* tags gợi ý */
-.homes-hero-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 12px 0 8px;
-  font-size: 12px;
-  color: var(--homes-soft-text);
-  align-items: center;
-}
-
-.homes-hero-tags > span {
-  margin-right: 2px;
-}
-
-.homes-hero-tags button {
-  border-radius: 999px;
-  border: 1px dashed rgba(148, 163, 184, 0.9);
-  background: rgba(15, 23, 42, 0.95);
-  padding: 4px 11px;
-  font-size: 11px;
-  cursor: pointer;
-  color: #e5e7eb;
-}
-
-/* stats */
-.homes-hero-stats {
-  list-style: none;
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background-color: var(--bg-dark);
+  color: var(--text-light);
+  overflow-x: hidden;
+  margin: 0;
   padding: 0;
-  margin: 10px 0 0;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: #0f172a; }
+::-webkit-scrollbar-thumb { 
+  background: linear-gradient(180deg, #1e293b, #475569); 
+  border-radius: 5px; 
+}
+::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+/* =========================================
+   2. UTILITY CLASSES (Animation, Effects)
+   ========================================= */
+
+/* Text Gradient Effect */
+.text-gradient {
+  background: linear-gradient(135deg, #60a5fa 0%, #34d399 50%, #facc15 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 2px 4px rgba(56, 189, 248, 0.3));
+}
+
+/* Glassmorphism Card Effect */
+.glass-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-light);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  transition: all 0.3s ease;
+}
+
+/* Hover Lift Effect */
+.hover-card {
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.hover-card:hover {
+  transform: translateY(-8px);
+  border-color: rgba(96, 165, 250, 0.6);
+  background: rgba(30, 41, 59, 0.7);
+  box-shadow: 0 20px 40px -5px rgba(59, 130, 246, 0.2);
+}
+
+/* Fade In Animation */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fadeInUp 0.8s ease-out forwards;
+}
+
+/* Loading Spinner */
+.loading-screen {
+  min-height: 100vh;
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.homes-hero-stats li {
-  min-width: 130px;
-  border-radius: 14px;
-  padding: 7px 10px;
-  background: radial-gradient(circle at 0 0, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.98));
-  border: 1px solid rgba(148, 163, 184, 0.6);
-  font-size: 11px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.homes-hero-stats strong {
-  font-size: 16px;
-  font-weight: 800;
-  color: #f9fafb;
-}
-
-.homes-hero-stats span {
-  color: var(--homes-soft-text);
-}
-
-/* cột phải hero: glass card */
-.homes-hero-side {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.hero-card {
-  border-radius: 20px;
-  padding: 12px;
-  background: var(--homes-card);
-  border: 1px solid var(--homes-card-border);
-  box-shadow:
-    0 26px 50px rgba(0, 0, 0, 0.85),
-    0 0 0 1px rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(18px);
-}
-
-/* map mini */
-.hero-card--map {
-  height: 160px;
-  display: flex;
-  flex-direction: column;
-}
-
-.hero-card__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 12px;
-  margin-bottom: 8px;
-  color: var(--homes-soft-text);
-}
-
-.hero-card__header span:first-child {
-  font-weight: 600;
-  color: #e5e7eb;
-}
-
-.hero-status-dot {
-  padding: 3px 8px;
-  border-radius: 999px;
-  border: 1px solid rgba(34, 197, 94, 0.8);
-  background: rgba(21, 128, 61, 0.35);
-  color: #bbf7d0;
-  font-size: 11px;
-}
-
-.hero-map {
-  flex: 1;
-  border-radius: 16px;
-  background:
-    radial-gradient(circle at 12% 0%, rgba(56, 189, 248, 0.7), transparent 60%),
-    radial-gradient(circle at 90% 90%, rgba(239, 68, 68, 0.7), transparent 60%),
-    radial-gradient(circle at 40% 70%, rgba(34, 197, 94, 0.7), transparent 55%);
-  position: relative;
-  overflow: hidden;
-}
-
-.hero-map-pin {
-  position: absolute;
-  width: 15px;
-  height: 15px;
-  border-radius: 999px;
-  background: #f97316;
-  box-shadow:
-    0 0 0 4px rgba(248, 250, 252, 0.4),
-    0 0 14px rgba(248, 250, 252, 0.8);
-}
-
-.hero-map-pin::after {
-  content: '';
-  position: absolute;
-  inset: 3px;
-  border-radius: inherit;
-  background: #fefce8;
-}
-
-.hero-map-pin.pin-1 { top: 20%; left: 26%; }
-.hero-map-pin.pin-2 { top: 36%; right: 18%; }
-.hero-map-pin.pin-3 { bottom: 22%; left: 22%; }
-.hero-map-pin.pin-4 { bottom: 14%; right: 30%; }
-
-/* danh sách phòng mini */
-.hero-card--list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.hero-list-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 6px 8px;
-  border-radius: 12px;
-  background: var(--homes-card-soft);
-}
-
-.hero-list-title {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: #e5e7eb;
-}
-
-.hero-list-sub {
-  margin: 0;
-  font-size: 11px;
-  color: var(--homes-soft-text);
-}
-
-.hero-list-price {
-  align-self: center;
-  padding: 4px 8px;
-  border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.8);
-  background: rgba(15, 23, 42, 0.95);
-  font-size: 11px;
-}
-
-/* responsive hero */
-@media (max-width: 900px) {
-  .homes-hero-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-/* ================== SECTION HEAD ================== */
-
-.homes-section-head {
-  padding: 30px 0 14px;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 12px;
-  color: #f9fafb;
-}
-
-.homes-section-head h2 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 800;
-}
-
-.homes-section-head p {
-  margin: 4px 0 0;
-  font-size: 13px;
-  color: var(--homes-soft-text);
-}
-
-.homes-link {
-  color: var(--homes-accent2);
-  text-decoration: none;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.homes-link:hover {
-  text-decoration: underline;
-}
-
-/* ================== DANH MỤC LOẠI CHỖ Ở ================== */
-
-.homes-categories__list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
-}
-
-@media (max-width: 768px) {
-  .homes-categories__list {
-    grid-template-columns: 1fr;
-  }
-}
-
-.homes-cat {
-  position: relative;
-  display: grid;
-  grid-template-columns: 100px 1fr;
-  gap: 14px;
-  align-items: center;
-  padding: 12px 14px;
-  border-radius: 22px;
-  background: radial-gradient(circle at 0 0, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.96));
-  border: 1px solid rgba(148, 163, 184, 0.55);
-  text-decoration: none;
-  color: #e5e7eb;
-  box-shadow: 0 26px 52px rgba(0, 0, 0, 0.85);
-  overflow: hidden;
-  transition:
-    transform 0.18s ease,
-    box-shadow 0.18s ease,
-    border-color 0.18s ease,
-    background 0.18s ease;
-}
-
-.homes-cat::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 100% 0%, rgba(14, 165, 233, 0.4), transparent 55%);
-  opacity: 0;
-  transition: opacity 0.18s ease;
-}
-
-.homes-cat__thumb {
-  width: 100px;
-  height: 100px;
-  border-radius: 24px;
-  overflow: hidden;
-  position: relative;
-  box-shadow: 0 14px 26px rgba(0, 0, 0, 0.85);
-}
-
-.homes-cat__thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.homes-cat__thumb::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, transparent, rgba(15, 23, 42, 0.6));
-}
-
-.homes-cat__info h3 {
-  margin: 0 0 4px;
-  font-size: 16px;
-  font-weight: 700;
-}
-
-.homes-cat__info p {
-  margin: 0;
-  font-size: 13px;
-  color: var(--homes-soft-text);
-}
-
-.homes-cat:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 32px 70px rgba(0, 0, 0, 0.95);
-  border-color: var(--homes-accent2);
-}
-
-.homes-cat:hover::after {
-  opacity: 1;
-}
-
-/* ================== TIN NỔI BẬT ================== */
-
-.homes-featured__grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.1fr);
-  gap: 18px;
-}
-
-@media (max-width: 900px) {
-  .homes-featured__grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-.homes-featured__main {
-  border-radius: 24px;
-  background: radial-gradient(circle at 0 0, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.98));
-  border: 1px solid rgba(148, 163, 184, 0.7);
-  overflow: hidden;
-  box-shadow: 0 32px 70px rgba(0, 0, 0, 0.95);
-  display: flex;
-  flex-direction: column;
-}
-
-.homes-featured__main .main-image {
-  position: relative;
-  height: 220px;
-  overflow: hidden;
-}
-
-.homes-featured__main .main-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transform: scale(1.04);
-}
-
-.featured-chip {
-  position: absolute;
-  left: 14px;
-  top: 14px;
-  padding: 4px 11px;
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.96);
-  color: #fef9c3;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.homes-featured__main .main-body {
-  padding: 14px 16px 16px;
-}
-
-.homes-featured__main h3 {
-  margin: 0 0 6px;
-  font-size: 18px;
-  font-weight: 800;
-  color: #f9fafb;
-}
-
-.main-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  font-size: 13px;
-  color: var(--homes-soft-text);
-  margin-bottom: 8px;
-}
-
-.main-meta .price {
-  color: #f97316;
-  font-weight: 700;
-}
-
-.homes-featured__main p {
-  margin: 0 0 10px;
-  font-size: 13px;
-  color: var(--homes-soft-text);
-}
-
-.main-actions {
-  display: flex;
-  gap: 8px;
-}
-
-/* danh sách bên phải */
-.homes-featured__list {
-  border-radius: 22px;
-  background: rgba(15, 23, 42, 0.9);
-  border: 1px solid rgba(148, 163, 184, 0.65);
-  padding: 8px 6px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.homes-featured__item {
-  display: grid;
-  grid-template-columns: 88px 1fr;
-  gap: 10px;
-  padding: 7px 9px;
-  border-radius: 14px;
-  transition: background 0.16s ease, transform 0.16s ease;
-  cursor: pointer;
-}
-
-.homes-featured__item .item-thumb {
-  width: 88px;
-  height: 64px;
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.homes-featured__item .item-thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.homes-featured__item .item-body h4 {
-  margin: 0 0 4px;
-  font-size: 13px;
-  color: #f9fafb;
-}
-
-.item-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  font-size: 11px;
-  color: var(--homes-soft-text);
-}
-
-.item-meta .price {
-  color: #f97316;
-  font-weight: 600;
-}
-
-.item-addr {
-  margin: 2px 0 0;
-  font-size: 11px;
-  color: var(--homes-soft-text);
-}
-
-.homes-featured__item:hover {
-  background: rgba(15, 23, 42, 0.98);
-  transform: translateY(-2px);
-}
-
-/* ================== UNI (TRƯỜNG) ================== */
-
-.homes-uni {
-  padding: 32px 0;
-}
-
-.homes-uni__inner {
-  display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.5fr);
-  gap: 22px;
-  border-radius: 26px;
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(8, 47, 73, 0.98));
-  border: 1px solid rgba(148, 163, 184, 0.6);
-  box-shadow: 0 32px 70px rgba(0, 0, 0, 0.95);
-  padding: 18px 18px 18px 22px;
-}
-
-@media (max-width: 900px) {
-  .homes-uni__inner {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-.homes-uni__intro h2 {
-  margin: 0 0 6px;
-  font-size: 18px;
-  font-weight: 800;
-}
-
-.homes-uni__intro p {
-  margin: 0 0 10px;
-  font-size: 13px;
-  color: var(--homes-soft-text);
-}
-
-.homes-uni__bullet {
-  margin: 0;
-  padding-left: 18px;
-  font-size: 13px;
-  color: #e5e7eb;
-}
-
-.homes-uni__bullet li + li {
-  margin-top: 4px;
-}
-
-.homes-uni__list {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-}
-
-.homes-uni__item {
-  display: grid;
-  grid-template-columns: 56px 1fr;
-  gap: 10px;
-  align-items: center;
-  padding: 6px 8px;
-  border-radius: 14px;
-  text-decoration: none;
-  color: #f9fafb;
-  background: rgba(15, 23, 42, 0.92);
-  border: 1px solid rgba(148, 163, 184, 0.6);
-  transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
-}
-
-.homes-uni__logo {
-  width: 56px;
-  height: 56px;
-  border-radius: 18px;
-  overflow: hidden;
-  background: #020617;
-  display: flex;
-  align-items: center;
   justify-content: center;
-  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.95);
+  align-items: center;
+  background-color: var(--bg-dark);
+}
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--primary-color);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+
+/* =========================================
+   3. HOME PAGE STYLES
+   ========================================= */
+
+/* Hero Section */
+.hero-section {
+  padding-top: 120px;
+  padding-bottom: 80px;
+  position: relative;
+  width: 100%;
 }
 
-.homes-uni__logo img {
-  width: 44px;
-  height: 44px;
-  object-fit: contain;
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.homes-uni__info .name {
-  margin: 0 0 2px;
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 40px;
+  align-items: center;
+}
+
+@media (min-width: 1024px) {
+  .hero-grid {
+    grid-template-columns: 5fr 7fr;
+    gap: 60px;
+  }
+}
+
+.hero-left {
+  text-align: center;
+  z-index: 10;
+}
+
+@media (min-width: 1024px) {
+  .hero-left {
+    text-align: left;
+  }
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(37, 99, 235, 0.1);
+  border: 1px solid rgba(37, 99, 235, 0.3);
+  border-radius: 99px;
+  color: var(--secondary-color);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 24px;
 }
 
-.homes-uni__info .desc {
-  margin: 0;
-  font-size: 11px;
-  color: var(--homes-soft-text);
+.hero-title {
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1.1;
+  color: #fff;
+  margin-bottom: 24px;
 }
 
-.homes-uni__item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 22px 40px rgba(0, 0, 0, 0.95);
-  background: rgba(15, 23, 42, 0.99);
+@media (min-width: 1024px) {
+  .hero-title {
+    font-size: 64px;
+  }
 }
 
-.homes-uni__item.is-more {
-  justify-content: center;
+.hero-desc {
+  font-size: 18px;
+  color: var(--text-gray);
+  line-height: 1.6;
+  margin-bottom: 32px;
 }
 
-.homes-uni__plus {
-  font-size: 22px;
-  color: var(--homes-accent2);
-}
-
-/* ================== CẨM NANG (CAROUSEL) ================== */
-
-.homes-guide {
-  padding: 26px 0 8px;
-}
-
-.homes-guide__wrap {
-  position: relative;
-  border-radius: 26px;
-  background: radial-gradient(circle at 0 0, rgba(248, 250, 252, 0.12), transparent 60%);
-  border: 1px solid rgba(148, 163, 184, 0.6);
-  box-shadow: 0 32px 70px rgba(0, 0, 0, 0.95);
-  padding: 18px 0;
-  overflow: hidden;
-}
-
-.homes-guide__track {
+.hero-actions {
   display: flex;
   gap: 16px;
-  overflow-x: auto;
-  scroll-behavior: smooth;
-  padding: 4px 46px;
+  justify-content: center;
 }
 
-.homes-guide__track::-webkit-scrollbar {
-  height: 8px;
-}
-
-.homes-guide__track::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.8);
-  border-radius: 4px;
-}
-
-.homes-guide__card {
-  min-width: 320px;
-  max-width: 380px;
-  border-radius: 20px;
-  background: rgba(15, 23, 42, 0.96);
-  border: 1px solid rgba(148, 163, 184, 0.75);
-  overflow: hidden;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.95);
-}
-
-@media (max-width: 480px) {
-  .homes-guide__card {
-    min-width: 88%;
+@media (min-width: 1024px) {
+  .hero-actions {
+    justify-content: flex-start;
   }
 }
 
-.homes-guide__media {
-  position: relative;
-}
-
-.homes-guide__media img {
-  width: 100%;
-  height: 200px;
-  object-fit: cover;
-  display: block;
-}
-
-.homes-guide__date {
-  position: absolute;
-  left: 12px;
-  bottom: 12px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.96);
-  color: #e5e7eb;
-  font-size: 11px;
-}
-
-.homes-guide__body {
-  padding: 12px 14px 14px;
-}
-
-.homes-guide__title {
-  margin: 0 0 4px;
-  font-size: 15px;
+.btn-primary {
+  background-color: var(--primary-color);
+  color: #fff;
+  padding: 14px 32px;
+  border-radius: 12px;
   font-weight: 700;
-}
-
-.homes-guide__excerpt {
-  margin: 0 0 6px;
-  font-size: 13px;
-  color: var(--homes-soft-text);
-}
-
-/* nút next/prev */
-.homes-guide__nav {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
-  background: #020617;
-  border: 1px solid rgba(148, 163, 184, 0.9);
-  color: #e5e7eb;
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 20px;
+  gap: 8px;
+  border: none;
   cursor: pointer;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.95);
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
 }
 
-.homes-guide__nav.is-left { left: 10px; }
-.homes-guide__nav.is-right { right: 10px; }
-
-.homes-guide__nav:hover {
-  background: #0b1120;
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-2px);
 }
 
-/* ================== PROMO BANNER ================== */
-
-.homes-promo {
-  margin-top: 32px;
-}
-
-.homes-promo__inner {
- 
-  padding: 18px 0;
+.btn-outline {
+  background: transparent;
+  color: #fff;
+  padding: 14px 32px;
+  border-radius: 12px;
+  font-weight: 600;
+  border: 1px solid #475569;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-  border-radius: 26px;
-  background: radial-gradient(circle at 0 0, rgba(248, 250, 252, 0.16), transparent 60%);
-  border: 1px solid rgba(148, 163, 184, 0.7);
-  box-shadow: 0 32px 70px rgba(0, 0, 0, 0.95);
+  gap: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
 }
 
-.homes-promo__inner .promo-text h2 {
-  margin: 0 0 4px;
-  font-size: 18px;
-  font-weight: 800;
-  color: #f9fafb;
+.btn-outline:hover {
+  background: rgba(255, 255, 255, 0.05);
 }
 
-.homes-promo__inner .promo-text p {
-  margin: 0 0 10px;
-  font-size: 13px;
-  color: var(--homes-soft-text);
-}
-
-.promo-badge {
+.icon-circle {
+  width: 32px;
+  height: 32px;
+  background: #334155;
+  border-radius: 50%;
   display: flex;
-  flex-direction: column;
-  align-items: center;
   justify-content: center;
-  border-radius: 999px;
-  padding: 10px 18px;
-  border: 1px solid rgba(148, 163, 184, 0.9);
-  background: #020617;
+  align-items: center;
 }
 
-.promo-badge span {
-  font-size: 18px;
-  font-weight: 800;
-}
-
-.promo-badge small {
-  font-size: 11px;
-  color: var(--homes-soft-text);
-}
-
-/* ================== BLOG ================== */
-
-.homes-blog {
-  padding-top: 32px;
-}
-
-.homes-blog__grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
-}
-
-@media (max-width: 900px) {
-  .homes-blog__grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 640px) {
-  .homes-blog__grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.homes-blog__item {
-  border-radius: 22px;
-  background: rgba(15, 23, 42, 0.96);
-  border: 1px solid rgba(148, 163, 184, 0.7);
-  overflow: hidden;
+/* Hero Right Image */
+.hero-right {
   display: flex;
-  flex-direction: column;
-  box-shadow: 0 26px 56px rgba(0, 0, 0, 0.95);
+  justify-content: center;
+  position: relative;
+  z-index: 10;
 }
 
-.homes-blog__item .thumb {
-  height: 150px;
+@media (min-width: 1024px) {
+  .hero-right {
+    justify-content: flex-end;
+  }
+}
+
+.hero-image-wrapper {
+  position: relative;
+  border-radius: 40px;
   overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--border-light);
+  width: 100%;
+  height: 400px;
 }
 
-.homes-blog__item .thumb img {
+@media (min-width: 1024px) {
+  .hero-image-wrapper {
+    height: 500px;
+  }
+}
+
+.hero-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.7s;
 }
 
-.homes-blog__item .body {
-  padding: 12px 13px 14px;
+.hero-image-wrapper:hover .hero-img {
+  transform: scale(1.05);
 }
 
-.homes-blog__item .body h3 {
-  margin: 0 0 4px;
-  font-size: 15px;
-  font-weight: 700;
-  color: #f9fafb;
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, #0B1120 0%, transparent 100%);
+  opacity: 0.6;
 }
 
-.homes-blog__item .body p {
-  margin: 0 0 6px;
-  font-size: 13px;
-  color: var(--homes-soft-text);
+.hero-floating-card {
+  position: absolute;
+  bottom: 32px;
+  left: 32px;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(12px);
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
 }
 
-/* ================== RESPONSIVE NHẸ ================== */
-
-@media (max-width: 640px) {
-  .homes-hero {
-    padding-top: 20px;
-  }
-  .homes-promo__inner {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+.check-icon {
+  width: 48px;
+  height: 48px;
+  background: var(--success-color);
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #fff;
 }
 
-.re-filtercard {
-    
-    margin-top: 70px;
-  background: #fff;
-  border: 1px solid var(--c-border);
-  border-radius: 14px;
-  padding: 14px;
-  box-shadow: var(--shadow-soft);
+/* Stats Bar */
+.stats-section {
+  position: relative;
+  z-index: 20;
+  margin-top: -40px;
+  margin-bottom: 80px;
+  padding: 0 24px;
 }
 
-.re-filtercard h3 {
-  margin: 0 0 10px;
-  font-weight: 800;
-  font-size: 18px;
-  color: var(--c-text);
+.stats-card {
+  background: rgba(30, 41, 59, 0.9);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border-light);
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  max-width: 1150px;
+  margin: 0 auto;
 }
 
-.re-field {
+.stats-grid {
   display: grid;
-  gap: 8px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  align-items: center;
+}
+
+@media (min-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.stat-item {
+  text-align: center;
+  border-right: 1px solid var(--border-light);
+  padding: 0 10px;
+}
+
+.stat-item:last-child {
+  border-right: none;
+}
+
+.stat-icon {
+  margin-bottom: 8px;
+  display: inline-flex;
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--secondary-color);
+}
+
+.stat-value {
+  font-size: 36px;
+  font-weight: 900;
+  margin: 4px 0;
+}
+
+.stat-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-gray);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Steps Section & Latest News */
+.section {
+  padding: 80px 0;
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 60px;
+}
+
+.section-subtitle {
+  color: var(--primary-color);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 14px;
+  display: block;
   margin-bottom: 12px;
 }
 
-.re-field label {
-  font-size: 13px;
-  color: var(--c-muted);
+.section-title {
+  font-size: 36px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
 }
 
-.re-field select,
-.re-field .re-input input {
-  min-height: var(--h-field);
-  border-radius: 10px;
-  border: 1px solid var(--c-border);
-  background: #fff;
-  padding: 8px 12px;
-  font-size: 14px;
-  color: #111;
-}
-
-.re-field .re-input { padding: 0; border: 0; } /* tận dụng .re-input khung */
-.re-field .re-input input { border: 1px solid var(--c-border); border-radius: 10px; }
-
-.re-checklist {
+.grid-3 {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 6px;
+  gap: 32px;
 }
 
-.re-check {
-  display: inline-flex;
+@media (min-width: 768px) {
+  .grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Steps Card */
+.step-card {
+  background: rgba(30, 41, 59, 0.4);
+  backdrop-filter: blur(12px);
+  padding: 40px 32px;
+  border-radius: 24px;
+  border: 1px solid var(--border-light);
+  text-align: center;
+  position: relative;
+  transition: transform 0.3s;
+}
+
+.step-card:hover {
+  transform: translateY(-8px);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.step-number {
+  position: absolute;
+  top: 16px;
+  right: 32px;
+  font-size: 64px;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.03);
+  font-family: serif;
+}
+
+.step-icon-box {
+  width: 64px;
+  height: 64px;
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--secondary-color);
+  border-radius: 16px;
+  display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 8px;
+  margin: 0 auto 24px;
+}
+
+.step-card h4 {
+  font-size: 20px;
+  color: #fff;
+  margin-bottom: 12px;
+}
+
+.step-card p {
+  color: var(--text-gray);
   font-size: 14px;
-  color: #111;
+  line-height: 1.6;
 }
 
-.re-check input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-}
-
-.re-filtercard__actions {
+/* Home Card (Latest Properties) */
+.section-top {
   display: flex;
-  gap: 8px;
-  margin-top: 6px;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 48px;
+  border-bottom: 1px solid var(--border-light);
+  padding-bottom: 24px;
 }
 
-/* Responsive: dưới 960px thì aside xuống dưới */
-@media (max-width: 960px) {
-  .re-layout { grid-template-columns: 1fr; }
-  .re-aside { position: static; }
+.home-card {
+  background: linear-gradient(180deg, #020617, #020617cc);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  display: flex;
+  flex-direction: column;
 }
 
-/* (SỬA) selector hero đúng: phần này thay cho .container .re-hero__inner */
-.re-hero__inner {
+.home-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+}
+
+.home-card__img {
+  position: relative;
+  height: 240px;
+  overflow: hidden;
+}
+
+.home-card__img img {
   width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 35px;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s;
+}
+
+.home-card:hover .home-card__img img {
+  transform: scale(1.1);
+}
+
+.card-badge-new {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: var(--primary-color);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 8px;
+  text-transform: uppercase;
+}
+
+.card-price-tag {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border-light);
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.home-card__body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.home-card__title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.home-card__addr {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  gap: 8px;
+  color: var(--text-gray);
+  font-size: 14px;
+  margin-bottom: 16px;
 }
+
+.home-card__footer {
+  margin-top: auto;
+  border-top: 1px solid var(--border-light);
+  padding-top: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-specs span {
+  background: rgba(51, 65, 85, 0.5);
+  color: #cbd5e1;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  margin-right: 8px;
+}
+
+.btn-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--secondary-color);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.2s;
+}
+
+.btn-circle:hover {
+  background: var(--primary-color);
+  color: #fff;
+}
+
+/* Popular Locations (Bento Grid) */
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 200px);
+  gap: 16px;
+  height: 400px;
+  max-width: 1024px;
+  margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+  .bento-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.bento-item {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 1px solid var(--border-light);
+}
+
+.bento-large {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+
+.bento-wide {
+  grid-column: span 2;
+}
+
+.bento-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.7s;
+}
+
+.bento-item:hover .bento-img {
+  transform: scale(1.1);
+}
+
+.bento-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+}
+
+.bento-content {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+}
+
+.bento-title {
+  color: #fff;
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.bento-subtitle {
+  color: var(--secondary-color);
+  font-size: 12px;
+  margin: 4px 0 0;
+  font-weight: 500;
+}
+
+/* CTA Section */
+.cta-box {
+  background: #1e293b;
+  border-radius: 40px;
+  overflow: hidden;
+  position: relative;
+  padding: 64px 32px;
+  max-width: 1150px;
+  margin: 0 auto;
+}
+
+.cta-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.3;
+}
+
+.cta-content {
+  position: relative;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 40px;
+  align-items: center;
+}
+
+@media (min-width: 768px) {
+  .cta-content {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.cta-title {
+  font-size: 36px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 16px;
+}
+
+.text-highlight {
+  color: var(--secondary-color);
+}
+
+.cta-card-3d {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  padding: 32px;
+  border-radius: 24px;
+  border: 1px solid var(--border-light);
+  transform: rotate(3deg);
+  width: fit-content;
+  margin: 0 auto;
+}
+
+/* Testimonials */
+.bg-darker {
+  background-color: rgba(15, 22, 35, 0.5);
+}
+
+.testimonial-card {
+  background: rgba(30, 41, 59, 0.4);
+  border: 1px solid var(--border-light);
+  border-radius: 20px;
+  padding: 32px;
+}
+
+.stars {
+  color: #facc15;
+  margin-bottom: 16px;
+  display: flex;
+  gap: 4px;
+}
+
+.review-text {
+  color: #cbd5e1;
+  font-style: italic;
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid rgba(59, 130, 246, 0.3);
+}
+
+/* --- DETAIL PAGE STYLES --- */
+.home-detail {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding: 80px 20px;
+  box-sizing: border-box;
+}
+
+.home-detail-container {
+  max-width: 800px;
+  width: 100%;
+}
+
+.detail-image-box {
+  background: rgba(255, 255, 255, 0.04);
+  padding: 24px;
+  border-radius: 22px;
+  backdrop-filter: blur(6px);
+  margin-bottom: 30px;
+}
+
+.detail-img {
+  width: 100%;
+  height: auto;
+  border-radius: 18px;
+  object-fit: cover;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+}
+
+.detail-title {
+  margin-top: 20px;
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.detail-desc {
+  margin-top: 16px;
+  color: #d1d5db;
+  line-height: 1.8;
+  font-size: 16px;
+}
+
+.detail-meta {
+  margin-top: 14px;
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  color: var(--text-gray);
+  font-size: 14px;
+  border-bottom: 1px solid var(--border-light);
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+}
+
+.detail-btn {
+  display: inline-block;
+  margin-top: 18px;
+  padding: 12px 24px;
+  border-radius: 10px;
+  background: var(--primary-color);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  transition: 0.2s;
+  cursor: pointer;
+  border: none;
+}
+
+.detail-btn:hover {
+  background: var(--primary-hover);
+}
+
+/* Helper Classes */
+.text-center { text-align: center; }
+.hidden-mobile { display: none; }
+@media (min-width: 768px) { .hidden-mobile { display: block; } }
