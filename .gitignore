@@ -1,5 +1,9 @@
+.github/
 #server
 server/vendor
 server/*.log
 server/.env
-server/.env.*client/.env
+server/.env.*
+#client
+client/node_modules
+client/.env.*
