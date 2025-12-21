@@ -483,7 +483,7 @@ export default function AdminDashboard() {
                           : "—"}
                       </td>
 
-                      <td className="admin-td-actions">
+                      <td className="admin-td-actions" >
                         {post.status === "pending" ? (
                           <>
                             <button

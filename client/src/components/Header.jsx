@@ -277,7 +277,7 @@ export default function Header() {
     : (
       <>
         <NavLink to="/phong-tro" className={navClass}>Phòng trọ</NavLink>
-        <NavLink to="/nha-nguyên-can" className={navClass}>Nhà nguyên căn</NavLink>
+        <NavLink to="/nha-nguyen-can" className={navClass}>Nhà nguyên căn</NavLink>
         <NavLink to="/can-ho" className={navClass}>Căn hộ</NavLink>
         <NavLink to="/ky-tuc-xa" className={navClass}>Ký túc xá</NavLink>
       </>

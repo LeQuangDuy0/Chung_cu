@@ -1,6 +1,12 @@
 import { useState } from 'react'
 import { useSearchParams, useNavigate, Link } from 'react-router-dom'
+ 
 import { API_URL } from '../config/api.js';
+ 
+import Login from '../pages/Login'
+
+const API_URL = "http://127.0.0.1:8000/api";
+ 
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams()

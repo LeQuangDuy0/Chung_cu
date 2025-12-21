@@ -155,7 +155,7 @@ class ReviewController extends Controller
         $validated = $request->validate([
             'rating'  => 'required|integer|min:1|max:5',
             'content' => 'required|string',
-            // 'images.*' => 'image|max:2048', // nếu muốn validate ảnh
+           
         ]);
 
         $review = new Review();

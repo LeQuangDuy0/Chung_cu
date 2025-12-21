@@ -188,7 +188,7 @@ export default function AdminUsers() {
                   <td>{createdAt}</td>
 
                   {/* Actions */}
-                  <td>
+                  <td style={{display:'flex', width:270}}>
 
                     {/* Cấp quyền */}
                     {isUser && (
@@ -197,6 +197,7 @@ export default function AdminUsers() {
                         className="admin-btn admin-btn--primary"
                         disabled={savingId === u.id}
                         onClick={() => changeRole(u.id, "lessor")}
+                        
                       >
                         {savingId === u.id ? "Đang cấp quyền..." : "Cấp quyền lessor"}
                       </button>

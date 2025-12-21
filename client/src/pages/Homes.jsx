@@ -13,86 +13,98 @@ export default function Homes() {
   
   // --- DATA STATE ---
   const [featured, setFeatured] = useState([])
-  const [latestPosts, setLatestPosts] = useState([])
+  const [latestPosts, setLatestPosts] = useState([]) // State chứa bài viết mới nhất
   const [blogs, setBlogs] = useState([]) 
   const [stats, setStats] = useState({ posts: 0, landlords: 0, views: 0 }) 
   const [loadingHome, setLoadingHome] = useState(true)
 
   // --- API CALL ---
   useEffect(() => {
-    let mounted = true
+    // Dùng AbortController để hủy request nếu user chuyển trang nhanh
+    const controller = new AbortController(); 
 
     async function loadData() {
       setLoadingHome(true)
       try {
-        // Gọi song song các API thật
-        const [postsRes, blogsRes, statsRes] = await Promise.all([
-            api.get('/posts'), // Lấy danh sách bài đăng
-            api.get('/blogs'), // Lấy danh sách blog
-            // Nếu chưa có API stats công khai, bạn có thể tạo thêm route '/public/stats'
-            // Tạm thời dùng try-catch để tránh lỗi nếu chưa có API stats
-            api.get('/home/stats').catch(() => ({ data: { posts: 0, landlords: 0, views: 0 } })) 
+        // Gọi song song các API (bao gồm API Posts để lấy bài mới nhất)
+        const results = await Promise.allSettled([
+            api.get('/posts', { signal: controller.signal }),      // 0: Posts
+            api.get('/blogs', { signal: controller.signal }),      // 1: Blogs
+            api.get('/home/stats', { signal: controller.signal })  // 2: Stats
         ])
 
-        if (!mounted) return
+        const [postsRes, blogsRes, statsRes] = results;
 
-        // 1. Xử lý Posts
-        const rawPosts = postsRes.data.data || postsRes.data || []
-        
-        const mappedPosts = rawPosts.map((p) => ({
-          id: p.id,
-          title: p.title,
-          price: p.price,
-          area: p.area,
-          created_at: p.created_at,
-          // Nối chuỗi địa chỉ an toàn
-          address: [
-            p.address, 
-            p.ward?.name || p.ward_name, 
-            p.district?.name || p.district_name, 
-            p.province?.name || p.province_name
-          ].filter(Boolean).join(', '),
-          // Xử lý ảnh: Ưu tiên ảnh bìa -> ảnh đầu tiên -> ảnh mẫu
-          img: p.cover_image_url || (p.images && p.images.length > 0 ? p.images[0].url : 'https://via.placeholder.com/1000'),
-        }))
+        // 1. Xử lý Posts (Lấy bài mới nhất)
+        if (postsRes.status === 'fulfilled') {
+            const rawPosts = postsRes.value.data?.data || []
+            
+            const mappedPosts = rawPosts.map((p) => ({
+                id: p.id,
+                title: p.title,
+                price: p.price,
+                area: p.area,
+                created_at: p.created_at,
+                // Nối chuỗi địa chỉ
+                address: [
+                  p.address, 
+                  p.ward?.name || p.ward_name, 
+                  p.district?.name || p.district_name, 
+                  p.province?.name || p.province_name
+                ].filter(Boolean).join(', '),
+                // Logic ảnh: Main -> Thumbnail -> Ảnh đầu -> Placeholder
+                img: p.main_image_url || p.thumbnail_url || (p.images?.[0]?.url) || 'https://via.placeholder.com/1000',
+            }))
 
-        // Sắp xếp bài mới nhất (theo thời gian tạo giảm dần)
-        const sortedPosts = mappedPosts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-
-        // Lấy 3 bài đầu tiên làm nổi bật (Featured)
-        setFeatured(sortedPosts.slice(0, 3)) 
-        // Lấy 6 bài tiếp theo (hoặc trùng lặp tùy logic) cho danh sách mới nhất
-        setLatestPosts(sortedPosts.slice(0, 6)) 
+            // Sắp xếp bài mới nhất lên đầu
+            const sorted = mappedPosts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+            
+            // Cập nhật state (đoạn JSX bên dưới sẽ tự slice lấy 3 bài)
+            setLatestPosts(sorted)
+            setFeatured(sorted.slice(0, 3)) // (Tùy chọn) Nếu bạn dùng featured ở đâu đó
+        }
 
         // 2. Xử lý Blogs
-        const rawBlogs = blogsRes.data.data || blogsRes.data || []
-        const mappedBlogs = rawBlogs.map(b => ({
-            id: b.id,
-            title: b.title,
-            excerpt: b.excerpt || b.content?.substring(0, 100) + '...', 
-            img: b.image || 'https://via.placeholder.com/600x400',
-            slug: b.slug
-        }))
-        setBlogs(mappedBlogs.slice(0, 3)) // Chỉ lấy 3 bài blog mới nhất
+        if (blogsRes.status === 'fulfilled') {
+            const rawBlogs = blogsRes.value.data?.data || []
+            setBlogs(rawBlogs.slice(0, 3).map(b => ({
+                id: b.id,
+                title: b.title,
+                excerpt: b.excerpt || b.content?.substring(0, 100) + '...', 
+                img: b.image || 'https://via.placeholder.com/600x400',
+                slug: b.slug
+            })))
+        }
 
-        // 3. Xử lý Stats (Dữ liệu thật từ API)
-        const statsData = statsRes.data || {}
-        setStats({
-            posts: statsData.posts || rawPosts.length, // Fallback đếm thủ công nếu API stats lỗi
-            landlords: statsData.landlords || 0,
-            views: statsData.views || 0
-        })
+        // 3. Xử lý Stats
+        if (statsRes.status === 'fulfilled') {
+            const resData = statsRes.value.data; 
+            const statsData = resData?.data || {};
+            
+            setStats({
+                posts: statsData.posts || 0,
+                landlords: statsData.landlords || 0,
+                views: statsData.views || 0
+            })
+        }
 
       } catch (err) {
-        console.error("Lỗi tải dữ liệu trang chủ:", err)
+        if (err.name !== 'CanceledError') {
+            console.error("Lỗi tải trang chủ:", err)
+        }
       } finally {
-        if (mounted) setLoadingHome(false)
+        setLoadingHome(false)
       }
     }
 
     loadData()
-    return () => { mounted = false }
+    return () => controller.abort()
   }, [])
+
+  // Hàm xử lý khi click vào địa điểm (Bento Grid)
+  const handleLocationClick = (locationName) => {
+    nav(`/phong-tro?q=${encodeURIComponent(locationName)}`);
+  };
 
   if (loadingHome) {
     return (
@@ -129,7 +141,7 @@ export default function Homes() {
                         <button onClick={() => nav('/phong-tro')} className="btn-primary">
                             Tìm Ngay <ArrowRight size={20}/>
                         </button>
-                        <button className="btn-outline" onClick={() => nav('/gioi-thieu')}>
+                        <button className="btn-outline" onClick={() => nav('/blog')}>
                             <div className="icon-circle">
                                  <Info size={14} />
                             </div>
@@ -168,7 +180,7 @@ export default function Homes() {
         <div className="container">
             <div className="stats-card">
                     <div className="stats-grid">
-    {/* 1. Năm Kinh Nghiệm (Số liệu tĩnh hoặc lấy từ config nếu muốn) */}
+    {/* 1. Năm Kinh Nghiệm */}
     <div className="stat-item">
         <div className="stat-icon" style={{background: 'rgba(59, 130, 246, 0.1)', color: '#60a5fa'}}>
             <Star size={24} />
@@ -177,19 +189,18 @@ export default function Homes() {
         <p className="stat-label">Năm KN</p>
     </div>
 
-    {/* 2. Tổng số bài đăng (Lấy từ API: stats.posts) */}
+    {/* 2. Tổng số bài đăng */}
     <div className="stat-item">
         <div className="stat-icon" style={{background: 'rgba(52, 211, 153, 0.1)', color: '#34d399'}}>
             <Home size={24} />
         </div>
-        {/* Dùng toLocaleString để định dạng số (ví dụ: 1000 -> 1,000) */}
         <h3 className="stat-value">
             {stats.posts ? stats.posts.toLocaleString() : 0}+
         </h3>
         <p className="stat-label">Phòng Trọ</p>
     </div>
 
-    {/* 3. Tổng số chủ nhà (Lấy từ API: stats.landlords) */}
+    {/* 3. Tổng số chủ nhà */}
     <div className="stat-item">
         <div className="stat-icon" style={{background: 'rgba(167, 139, 250, 0.1)', color: '#a78bfa'}}>
             <Users size={24} />
@@ -200,7 +211,7 @@ export default function Homes() {
         <p className="stat-label">Chủ Nhà</p>
     </div>
 
-    {/* 4. Tổng lượt xem (Lấy từ API: stats.views) */}
+    {/* 4. Tổng lượt xem */}
     <div className="stat-item">
         <div className="stat-icon" style={{background: 'rgba(251, 146, 60, 0.1)', color: '#fb923c'}}>
             <Eye size={24} />
@@ -242,7 +253,7 @@ export default function Homes() {
         </div>
       </section>
       
-      {/* 4. LATEST LISTINGS (Dữ liệu thật từ API) */}
+      {/* 4. LATEST LISTINGS (ĐÃ KẾT NỐI API) */}
       <section className="section">
         <div className="container">
             <div className="section-top">
@@ -293,7 +304,7 @@ export default function Homes() {
         </div>
       </section>
 
-      {/* 5. POPULAR LOCATIONS */}
+      {/* 5. POPULAR LOCATIONS (ĐÃ THÊM SỰ KIỆN CLICK) */}
       <section className="section">
         <div className="container">
             <div className="section-header">
@@ -302,7 +313,11 @@ export default function Homes() {
             </div>
             
             <div className="bento-grid">
-                <div className="bento-item bento-large">
+                <div 
+                    className="bento-item bento-large" 
+                    onClick={() => handleLocationClick("Vỹ Dạ")}
+                    style={{cursor: 'pointer'}}
+                >
                     <img src="https://images.unsplash.com/photo-1565610222536-ef125c59da2c?auto=format&fit=crop&q=80&w=1000" className="bento-img" alt="Vỹ Dạ"/>
                     <div className="bento-overlay"></div>
                     <div className="bento-content">
@@ -311,7 +326,11 @@ export default function Homes() {
                     </div>
                 </div>
 
-                <div className="bento-item">
+                <div 
+                    className="bento-item"
+                    onClick={() => handleLocationClick("Xuân Phú")}
+                    style={{cursor: 'pointer'}}
+                >
                     <img src="https://images.unsplash.com/photo-1628624747186-a941c725611b?auto=format&fit=crop&q=80&w=500" className="bento-img" alt="Xuân Phú"/>
                     <div className="bento-overlay"></div>
                     <div className="bento-content">
@@ -320,7 +339,11 @@ export default function Homes() {
                     </div>
                 </div>
 
-                <div className="bento-item">
+                <div 
+                    className="bento-item"
+                    onClick={() => handleLocationClick("An Cựu")}
+                    style={{cursor: 'pointer'}}
+                >
                     <img src="https://images.unsplash.com/photo-1558036117-15d82a90b9b1?auto=format&fit=crop&q=80&w=500" className="bento-img" alt="An Cựu"/>
                     <div className="bento-overlay"></div>
                     <div className="bento-content">
@@ -329,7 +352,11 @@ export default function Homes() {
                     </div>
                 </div>
 
-                <div className="bento-item bento-wide">
+                <div 
+                    className="bento-item bento-wide"
+                    onClick={() => handleLocationClick("Huế")}
+                    style={{cursor: 'pointer'}}
+                >
                     <img src="https://images.unsplash.com/photo-1512918760532-3ed64bc80e89?auto=format&fit=crop&q=80&w=800" className="bento-img" alt="Trung tâm"/>
                     <div className="bento-overlay"></div>
                     <div className="bento-content">
@@ -417,7 +444,7 @@ export default function Homes() {
         </div>
       </section>
 
-      {/* 8. BLOG SECTION (Dữ liệu thật từ API) */}
+      {/* 8. BLOG SECTION */}
       {blogs.length > 0 && (
          <section className="section" style={{borderTop: '1px solid var(--border-light)'}}>
             <div className="container">

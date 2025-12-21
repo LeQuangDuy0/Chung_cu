@@ -30,10 +30,15 @@ export default function ReviewTree({
   onEditReview,
   onDeleteReview,
   onReplyToReply,
+  onEditReply,
+  onDeleteReply,
   currentUserId,
+  currentUser,
 }) {
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [replyContent, setReplyContent] = useState("");
+
+  const isAuth = !!currentUser;
 
   const [showEditForm, setShowEditForm] = useState(false);
   const [editContent, setEditContent] = useState(review.content);
@@ -42,7 +47,13 @@ export default function ReviewTree({
   const isOwner = currentUserId === review.user_id;
 
   const submitReply = async () => {
+    if (!isAuth) {
+      alert('Bạn cần đăng nhập để trả lời.');
+      window.location.href = '/login';
+      return;
+    }
     if (!replyContent.trim()) return;
+
     await onReplySubmit(review.id, replyContent.trim());
     setReplyContent("");
     setShowReplyForm(false);
@@ -128,7 +139,17 @@ export default function ReviewTree({
 
       {/* ACTIONS */}
       <div className="rv-actions">
-        <span className="rv-action" onClick={() => setShowReplyForm(!showReplyForm)}>
+        <span
+          className="rv-action"
+          onClick={() => {
+            if (!isAuth) {
+              alert('Bạn cần đăng nhập để trả lời.');
+              window.location.href = '/login';
+              return;
+            }
+            setShowReplyForm(!showReplyForm)
+          }}
+        >
           Trả lời
         </span>
 
@@ -178,7 +199,10 @@ export default function ReviewTree({
               key={rep.id}
               reply={rep}
               onReplyToReply={onReplyToReply}
+              onEditReply={onEditReply}
+              onDeleteReply={onDeleteReply}
               currentUserId={currentUserId}
+              currentUser={currentUser}
             />
           ))}
         </div>
@@ -190,16 +214,38 @@ export default function ReviewTree({
 /*********************************************************
      COMPONENT REPLY CHO LEVEL 2+ (CHỈ LÀ BÌNH LUẬN)
 *********************************************************/
-function ReviewReplyNode({ reply, onReplyToReply, currentUserId }) {
+function ReviewReplyNode({ reply, onReplyToReply, onEditReply, onDeleteReply, currentUserId, currentUser }) {
   const [showReplyBox, setShowReplyBox] = useState(false);
   const [replyText, setReplyText] = useState("");
 
+  const [showEditReplyForm, setShowEditReplyForm] = useState(false);
+  const [editReplyText, setEditReplyText] = useState(reply.content || "");
+
+  const isReplyOwner = currentUserId === reply.user_id;
+
   const submitRep = async () => {
+    if (!currentUser) {
+      alert('Bạn cần đăng nhập để trả lời.');
+      window.location.href = '/login';
+      return;
+    }
+
     if (!replyText.trim()) return;
 
     await onReplyToReply(reply.id, replyText.trim());
     setReplyText("");
     setShowReplyBox(false);
+  };
+
+  const submitEditReply = async () => {
+    if (!editReplyText.trim()) return;
+    await onEditReply(reply.id, { content: editReplyText.trim() });
+    setShowEditReplyForm(false);
+  };
+
+  const confirmDeleteReply = async () => {
+    if (!confirm('Bạn có chắc muốn xóa bình luận này?')) return;
+    await onDeleteReply(reply.id);
   };
 
   return (
@@ -215,12 +261,43 @@ function ReviewReplyNode({ reply, onReplyToReply, currentUserId }) {
         </div>
       </div>
 
-      <p className="rv-content">{reply.content}</p>
+      {!showEditReplyForm && <p className="rv-content">{reply.content}</p>}
+
+      {/* EDIT FORM for reply */}
+      {showEditReplyForm && (
+        <div className="rv-form">
+          <textarea
+            rows="3"
+            value={editReplyText}
+            onChange={(e) => setEditReplyText(e.target.value)}
+          />
+          <div className="rv-edit-actions">
+            <button className="pd-btn pd-btn--primary" onClick={submitEditReply}>
+              Lưu
+            </button>
+            <button className="pd-btn pd-btn--ghost" onClick={() => setShowEditReplyForm(false)}>
+              Hủy
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="rv-actions">
         <span className="rv-action" onClick={() => setShowReplyBox(!showReplyBox)}>
           Trả lời
         </span>
+
+        {isReplyOwner && (
+          <>
+            <span className="rv-action" onClick={() => setShowEditReplyForm(true)}>
+              Sửa
+            </span>
+
+            <span className="rv-action" onClick={confirmDeleteReply}>
+              Xóa
+            </span>
+          </>
+        )}
       </div>
 
       {showReplyBox && (
@@ -254,6 +331,7 @@ function ReviewReplyNode({ reply, onReplyToReply, currentUserId }) {
               reply={c}
               onReplyToReply={onReplyToReply}
               currentUserId={currentUserId}
+              currentUser={currentUser}
             />
           ))}
         </div>

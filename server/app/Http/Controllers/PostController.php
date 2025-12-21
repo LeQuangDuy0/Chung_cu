@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use App\Services\CloudinaryService;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Cache; // <--- Thêm dòng này
 use Exception;
 
 class PostController extends Controller
@@ -23,76 +24,117 @@ class PostController extends Controller
     }
 
     /**
-     * Chuẩn hoá ảnh + tính main_image_url, thumbnail_url cho 1 Post
+     * =========================================================================
+     * [NEW] API Lấy thống kê cho Home Page (Posts, Landlords, Views)
+     * Route: GET /api/home/stats
+     * =========================================================================
      */
-   protected function preparePostForResponse(Post $post): Post
-{
-    // ===== Chuẩn hoá images: thêm full_url và sort theo sort_order =====
-    if ($post->relationLoaded('images')) {
-        $post->images = $post->images
-            ->sortBy('sort_order')
-            ->values()
-            ->map(function ($img) {
-                $file = $img->file ?? null;
+  public function getHomeStats()
+    {
+        try {
+            // 1. Tăng lượt truy cập Web (lưu vào Cache vĩnh viễn)
+            Cache::increment('site_total_visits');
 
-                $img->full_url = $file
-                    ? (
-                        $file->url
-                        ?? $file->secure_url
-                        ?? $file->image_url
-                        ?? $file->path
-                        ?? null
-                    )
-                    : null;
-
-                return $img;
+            // 2. Lấy số liệu Posts và Landlords (Cache 5 phút để nhẹ server)
+            $cachedStats = Cache::remember('home_db_stats', 300, function () {
+                return [
+                    'posts' => Post::where('status', 'published')->count(),
+                    'landlords' => User::where('role', 'lessor')->count(),
+                ];
             });
-    }
 
-    // ===== Tính thumbnail_url =====
-    $thumbUrl = null;
-    if ($post->relationLoaded('thumbnail') && $post->thumbnail) {
-        $t = $post->thumbnail;
-        $thumbUrl =
-            $t->url
-            ?? $t->secure_url
-            ?? $t->image_url
-            ?? $t->path
-            ?? null;
-    }
-    $post->thumbnail_url = $thumbUrl;
+            // 3. Lấy số view hiện tại
+            $currentWebViews = Cache::get('site_total_visits', 0);
 
-    // ===== Tính main_image_url: ưu tiên thumbnail, sau đó ảnh đầu tiên =====
-    $mainImage = $thumbUrl;
+            return response()->json([
+                'status' => true,
+                'data' => [
+                    'posts' => $cachedStats['posts'],
+                    'landlords' => $cachedStats['landlords'],
+                    'views' => $currentWebViews // Trả về lượt truy cập web thực tế
+                ]
+            ]);
 
-    if (!$mainImage && $post->relationLoaded('images') && $post->images->count()) {
-        $first = $post->images->first();
-
-        if (!empty($first->full_url)) {
-            $mainImage = $first->full_url;
-        } elseif ($first->file) {
-            $f = $first->file;
-            $mainImage =
-                $f->url
-                ?? $f->secure_url
-                ?? $f->image_url
-                ?? $f->path
-                ?? null;
+        } catch (Exception $e) {
+            Log::error('Lỗi thống kê Home: ' . $e->getMessage());
+            return response()->json([
+                'status' => false,
+                'data' => ['posts' => 0, 'landlords' => 0, 'views' => 0]
+            ]);
         }
     }
 
-    $post->main_image_url = $mainImage;
+    /**
+     * Chuẩn hoá ảnh + tính main_image_url, thumbnail_url cho 1 Post
+     */
+    protected function preparePostForResponse(Post $post): Post
+    {
+        // ===== Chuẩn hoá images: thêm full_url và sort theo sort_order =====
+        if ($post->relationLoaded('images')) {
+            $post->images = $post->images
+                ->sortBy('sort_order')
+                ->values()
+                ->map(function ($img) {
+                    $file = $img->file ?? null;
 
-    // ===== Tính sẵn trung bình & số lượng review =====
-    if (!isset($post->reviews_avg)) {
-        $post->reviews_avg = round($post->reviews()->avg('rating') ?? 0, 1);
-    }
-    if (!isset($post->reviews_count)) {
-        $post->reviews_count = $post->reviews()->count();
-    }
+                    $img->full_url = $file
+                        ? (
+                            $file->url
+                            ?? $file->secure_url
+                            ?? $file->image_url
+                            ?? $file->path
+                            ?? null
+                        )
+                        : null;
 
-    return $post;
-}
+                    return $img;
+                });
+        }
+
+        // ===== Tính thumbnail_url =====
+        $thumbUrl = null;
+        if ($post->relationLoaded('thumbnail') && $post->thumbnail) {
+            $t = $post->thumbnail;
+            $thumbUrl =
+                $t->url
+                ?? $t->secure_url
+                ?? $t->image_url
+                ?? $t->path
+                ?? null;
+        }
+        $post->thumbnail_url = $thumbUrl;
+
+        // ===== Tính main_image_url: ưu tiên thumbnail, sau đó ảnh đầu tiên =====
+        $mainImage = $thumbUrl;
+
+        if (!$mainImage && $post->relationLoaded('images') && $post->images->count()) {
+            $first = $post->images->first();
+
+            if (!empty($first->full_url)) {
+                $mainImage = $first->full_url;
+            } elseif ($first->file) {
+                $f = $first->file;
+                $mainImage =
+                    $f->url
+                    ?? $f->secure_url
+                    ?? $f->image_url
+                    ?? $f->path
+                    ?? null;
+            }
+        }
+
+        $post->main_image_url = $mainImage;
+
+        // ===== Tính sẵn trung bình & số lượng review =====
+        if (!isset($post->reviews_avg)) {
+            $post->reviews_avg = round($post->reviews()->avg('rating') ?? 0, 1);
+        }
+        if (!isset($post->reviews_count)) {
+            $post->reviews_count = $post->reviews()->count();
+        }
+
+        return $post;
+    }
 
 
     // =========================
@@ -394,7 +436,11 @@ class PostController extends Controller
             $post->update($request->only([
                 'category_id', 'title', 'price', 'area', 'address', 'content',
                 'contact_phone', 'status', 'max_people',
+<<<<<<< HEAD
                 'province_id', 'district_id', 'ward_id','status',
+=======
+                'province_id', 'district_id', 'ward_id', 'status',
+>>>>>>> bedc56e (update)
             ]));
 
             // remove images
@@ -410,6 +456,7 @@ class PostController extends Controller
                     }
                     $img->delete();
                 }
+<<<<<<< HEAD
             }
 
             // add new images
@@ -463,9 +510,67 @@ class PostController extends Controller
                     'status'  => false,
                     'message' => 'Không thể cập nhật bài viết.',
                 ], 500);
+=======
+>>>>>>> bedc56e (update)
             }
-        }
 
+<<<<<<< HEAD
+=======
+            // add new images
+            if ($request->hasFile('images')) {
+                $currentMaxSort = $post->images()->max('sort_order') ?? 0;
+
+                foreach ($request->file('images') as $index => $file) {
+                    $upload = $this->cloudinary->upload(
+                        $file->getRealPath(),
+                        'post_images'
+                    );
+
+                    $cloudFile = CloudinaryFile::create([
+                        'model_type' => Post::class,
+                        'model_id'   => $post->id,
+                        'public_id'  => $upload['public_id'],
+                        'url'        => $upload['secure_url'],
+                        'type'       => 'image',
+                    ]);
+
+                    $post->images()->create([
+                        'file_id'    => $cloudFile->id,
+                        'sort_order' => $currentMaxSort + $index + 1,
+                    ]);
+                }
+            }
+
+            // reload
+            $post->load([
+                'category:id,name',
+                'province:id,name',
+                'district:id,name',
+                'ward:id,name',
+                'thumbnail',
+                'images.file',
+            ]);
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'Cập nhật bài thành công.',
+                'data'    => $this->preparePostForResponse($post),
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'status' => false,
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (Exception $e) {
+            Log::error('Post update error: ' . $e->getMessage());
+            return response()->json([
+                'status'  => false,
+                'message' => 'Không thể cập nhật bài viết.',
+            ], 500);
+        }
+    }
+
+>>>>>>> bedc56e (update)
 
     // =========================
     // DELETE api/posts/{id}
@@ -573,5 +678,8 @@ class PostController extends Controller
             'data' => $post
         ]);
     }
+<<<<<<< HEAD
 
+=======
+>>>>>>> bedc56e (update)
 }

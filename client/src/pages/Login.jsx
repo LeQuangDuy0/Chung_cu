@@ -1,17 +1,20 @@
-// src/components/Login.jsx
 import { useEffect, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import '../assets/style/pages/login.css'
 import { API_URL } from '../config/api.js'
 
-export default function Login({ onClose, onSwitchToRegister }) {
-  const location = useLocation()
-  const from = location.pathname + location.search
+export default function Login({
+  onClose,
+  onSwitchToRegister,
+  forceRedirectHome = false,
+}) {
+  const navigate = useNavigate()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
 
   useEffect(() => {
     const old = document.body.style.overflow
@@ -20,6 +23,7 @@ export default function Login({ onClose, onSwitchToRegister }) {
       document.body.style.overflow = old
     }
   }, [])
+
 
   const handleOverlayClick = (e) => {
     if (e.target.classList.contains('login-overlay')) {
@@ -49,39 +53,36 @@ export default function Login({ onClose, onSwitchToRegister }) {
       })
 
       const text = await res.text()
-      let data = null
+      let data
       try {
         data = JSON.parse(text)
       } catch {
-        throw new Error('API không trả JSON (có thể lỗi server)')
+        throw new Error('API không trả JSON (lỗi server)')
       }
 
       if (!res.ok || data?.status === false) {
         if (res.status === 422 && data?.errors) {
           const firstError =
-            Object.values(data.errors)[0]?.[0] || 'Lỗi xác thực dữ liệu.'
+            Object.values(data.errors)[0]?.[0] || 'Lỗi xác thực.'
           throw new Error(firstError)
         }
-        throw new Error(
-          data?.message || 'Đăng nhập thất bại, vui lòng kiểm tra lại.'
-        )
+        throw new Error(data?.message || 'Đăng nhập thất bại.')
       }
 
-      // 🔥 CHỈ LẤY access_token – KHÔNG LINH TINH
       const token = data?.access_token
-      const user = data?.user || null
+      const user = data?.user
 
       if (!token) {
-        throw new Error('Không nhận được access_token từ server.')
+        throw new Error('Không nhận được access_token.')
       }
 
-      // ✅ LƯU TOKEN
+      // 💾 Lưu đăng nhập
       localStorage.setItem('access_token', token)
       if (user) {
         localStorage.setItem('auth_user', JSON.stringify(user))
       }
 
-      // 🔐 VERIFY TOKEN NGAY (BẮT LỖI SỚM)
+      // 🔐 Verify token
       const check = await fetch(`${API_URL}/user/profile`, {
         headers: {
           Accept: 'application/json',
@@ -92,16 +93,22 @@ export default function Login({ onClose, onSwitchToRegister }) {
       if (!check.ok) {
         localStorage.removeItem('access_token')
         localStorage.removeItem('auth_user')
-        throw new Error('Token không hợp lệ hoặc đã hết hạn.')
+        throw new Error('Token không hợp lệ.')
       }
 
-      // 🔔 THÔNG BÁO TOÀN APP
+      // 🔔 Notify toàn app
       window.dispatchEvent(new Event('auth:changed'))
 
+      // ✅ XỬ LÝ ĐIỀU HƯỚNG
       onClose && onClose()
+
+      if (forceRedirectHome) {
+        navigate('/', { replace: true })
+      }
+
     } catch (err) {
       console.error(err)
-      setError(err.message || 'Có lỗi xảy ra, vui lòng thử lại.')
+      setError(err.message || 'Có lỗi xảy ra.')
     } finally {
       setLoading(false)
     }
@@ -121,7 +128,7 @@ export default function Login({ onClose, onSwitchToRegister }) {
 
           <h2>Đăng nhập</h2>
           <p className="login-sub">
-            Truy cập nhanh vào phòng đã lưu, lịch sử xem và đánh giá của bạn.
+            Truy cập nhanh vào phòng đã lưu và lịch sử của bạn.
           </p>
 
           <form className="login-form" onSubmit={handleSubmit}>
@@ -151,9 +158,9 @@ export default function Login({ onClose, onSwitchToRegister }) {
                 <span>Ghi nhớ đăng nhập</span>
               </label>
 
+              {/* ✅ CHỖ DUY NHẤT ĐƯỢC PHÉP ĐI ROUTE */}
               <Link
                 to="/forgot-password"
-                state={{ from }}
                 className="login-link"
                 onClick={onClose}
               >

@@ -174,7 +174,7 @@ export default function AdminPosts() {
         <table className="admin-table">
           <thead>
             <tr>
-              <th>ID</th>
+            
               <th>Tiêu đề</th>
               <th>Danh mục</th>
               <th>Giá (VNĐ/tháng)</th>
@@ -186,13 +186,13 @@ export default function AdminPosts() {
           <tbody>
             {items.map((p) => (
               <tr key={p.id}>
-                <td>{p.id}</td>
-                <td>
-                  <Link to={`/post/${p.id}`} target="_blank" rel="noreferrer">
+           
+                <td >
+                  <Link to={`/post/${p.id}`} target="_blank" rel="noreferrer" style={{color:'white', fontSize:'14px'}} >
                     {p.title}
                   </Link>
                 </td>
-                <td>{p.category?.name || '-'}</td>
+                <td >{p.category?.name || '-'}</td>
                 <td>{formatPrice(p.price)}</td>
                 <td>{p.status}</td>
                 <td>{formatDate(p.created_at)}</td>

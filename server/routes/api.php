@@ -47,6 +47,7 @@ Route::get('/posts/{id}/similar', [SearchController::class, 'similarPosts']);
 // ================== POSTS PUBLIC ==================
 Route::get('/posts', [PostController::class, 'index']);
 Route::get('/posts/{id}', [PostController::class, 'show']);
+Route::get('/home/stats', [PostController::class, 'getHomeStats']);
 
 
 // ================== BLOGS PUBLIC ==================
@@ -107,9 +108,17 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
     // ================== REVIEW TREE ==================
-    Route::get('/posts/{postId}/review-tree', [ReviewController::class, 'tree']);
-    Route::post('/reviews/{id}/replies', [ReviewController::class, 'replyToReview']);
-    Route::post('/replies/{id}/child', [ReviewController::class, 'replyToReply']);
+    // review tree (full threads)
+    Route::get('/posts/{postId}/review-tree', [ReviewController::class, 'getTree']);
+
+    // create a review for a post
+    Route::post('/posts/{postId}/reviews', [ReviewController::class, 'store']);
+
+    // reply to a review
+    Route::post('/reviews/{id}/replies', [ReviewController::class, 'replyReview']);
+
+    // reply to an existing reply (child)
+    Route::post('/replies/{id}/child', [ReviewController::class, 'replyChild']);
 
 
     // =================================================================

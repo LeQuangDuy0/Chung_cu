@@ -50,14 +50,23 @@ class BlogController extends Controller
     }
 
     // GET api/blogs/{slug}
-    public function show($slug)
-    {
-        $blog = BlogPost::with(['tags', 'images'])
-            ->where('slug', $slug)
-            ->firstOrFail();
+   public function show($slug)
+{
+    // Tạo query ban đầu
+    $query = BlogPost::with(['tags', 'images']);
 
-        return new BlogResource($blog);
+    // Kiểm tra thông minh: Nếu là số thì tìm theo ID, nếu là chữ thì tìm Slug
+    if (is_numeric($slug)) {
+        $query->where('id', $slug);
+    } else {
+        $query->where('slug', $slug);
     }
+
+    // Thực hiện tìm kiếm
+    $blog = $query->firstOrFail();
+
+    return new BlogResource($blog);
+}
 
     // POST api/blogs
     public function store(Request $request)
