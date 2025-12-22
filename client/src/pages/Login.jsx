@@ -1,14 +1,12 @@
+// src/components/Login.jsx
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import '../assets/style/pages/login.css'
 import { API_URL } from '../config/api.js'
 
-export default function Login({
-  onClose,
-  onSwitchToRegister,
-  forceRedirectHome = false,
-}) {
-  const navigate = useNavigate()
+export default function Login({ onClose, onSwitchToRegister }) {
+  const location = useLocation()
+  const from = location.pathname + location.search
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -53,27 +51,29 @@ export default function Login({
       })
 
       const text = await res.text()
-      let data
+         let data = null
       try {
         data = JSON.parse(text)
       } catch {
-        throw new Error('API không trả JSON (lỗi server)')
+   throw new Error('API không trả JSON (có thể lỗi server)')
       }
 
       if (!res.ok || data?.status === false) {
         if (res.status === 422 && data?.errors) {
           const firstError =
-            Object.values(data.errors)[0]?.[0] || 'Lỗi xác thực.'
+             Object.values(data.errors)[0]?.[0] || 'Lỗi xác thực dữ liệu.'
           throw new Error(firstError)
         }
-        throw new Error(data?.message || 'Đăng nhập thất bại.')
+          throw new Error(
+          data?.message || 'Đăng nhập thất bại, vui lòng kiểm tra lại.'
+        )
       }
 
       const token = data?.access_token
-      const user = data?.user
+       const user = data?.user || null
 
       if (!token) {
-        throw new Error('Không nhận được access_token.')
+        throw new Error('Không nhận được access_token từ server.')
       }
 
       // 💾 Lưu đăng nhập
@@ -93,7 +93,7 @@ export default function Login({
       if (!check.ok) {
         localStorage.removeItem('access_token')
         localStorage.removeItem('auth_user')
-        throw new Error('Token không hợp lệ.')
+          throw new Error('Token không hợp lệ hoặc đã hết hạn.')
       }
 
       // 🔔 Notify toàn app
@@ -161,6 +161,7 @@ export default function Login({
               {/* ✅ CHỖ DUY NHẤT ĐƯỢC PHÉP ĐI ROUTE */}
               <Link
                 to="/forgot-password"
+                  state={{ from }}
                 className="login-link"
                 onClick={onClose}
               >

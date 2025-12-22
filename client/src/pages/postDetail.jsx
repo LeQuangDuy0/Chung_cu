@@ -2,9 +2,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import '../assets/style/pages/post-detail.css'
-
+import { api } from '@/api/axios'
 import { HeartPlus, HeartOff } from 'lucide-react';
-
 import ReviewTree from "@/components/ReviewTree"
 
 
@@ -343,6 +342,17 @@ export default function PostDetail() {
     : ''
 
   const ratingList = post?.reviews || []
+  // ===== TÁCH ĐÁNH GIÁ CỦA TÔI & CỘNG ĐỒNG =====
+  const myReview = useMemo(() => {
+    if (!authUser) return null
+    return ratingList.find(r => r.user_id === authUser.id)
+  }, [ratingList, authUser])
+
+  const communityReviews = useMemo(() => {
+    if (!authUser) return ratingList
+    return ratingList.filter(r => r.user_id !== authUser.id)
+  }, [ratingList, authUser])
+
   const ratingCount = ratingList.length || post?.reviews_count || 0
   const ratingAvg =
     ratingList.length
@@ -633,37 +643,40 @@ export default function PostDetail() {
   // ===== LOAD REPLY TREE =====
   const [reviewTree, setReviewTree] = useState([]);
 
-  // Lấy toàn bộ review dạng cây — an toàn với responses không phải JSON
-  async function loadReviewTree() {
-    try {
-      const res = await fetch(`${API_BASE_URL}/posts/${id}/review-tree`, {
-        headers: { Accept: 'application/json' },
-      })
+ // ===== LOAD REPLY TREE (FIXED) =====
+async function loadReviewTree() {
+  try {
+    const token = localStorage.getItem("access_token");
 
-      if (!res.ok) {
-        // server trả lỗi hoặc redirect sang HTML, log để debug
-        const txt = await res.text().catch(() => '')
-        console.warn('loadReviewTree: non-ok response', res.status, txt)
-        setReviewTree([])
-        return
-      }
+    const res = await fetch(`${API_BASE_URL}/posts/${id}/review-tree`, {
+      headers: {
+        Accept: "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
 
-      const text = await res.text()
-      let data = null
-      try {
-        data = JSON.parse(text)
-      } catch (e) {
-        console.warn('loadReviewTree: response is not JSON', text)
-        setReviewTree([])
-        return
-      }
-
-      setReviewTree(data.data || [])
-    } catch (err) {
-      console.error('loadReviewTree failed', err)
-      setReviewTree([])
+    if (!res.ok) {
+      console.warn("loadReviewTree failed:", res.status);
+      setReviewTree([]);
+      return;
     }
+
+    const data = await res.json();
+    console.log("DEBUG review-tree RAW =", data);
+
+    let tree = [];
+    if (Array.isArray(data?.data)) tree = data.data;
+    else if (Array.isArray(data?.data?.reviews)) tree = data.data.reviews;
+    else if (Array.isArray(data?.reviews)) tree = data.reviews;
+
+    setReviewTree(tree);
+  } catch (err) {
+    console.error("loadReviewTree error", err);
+    setReviewTree([]);
   }
+}
+
+
 
   // Refetch post detail (dùng để làm mới tổng quan bài viết, số đánh giá, avg, ...)
   async function refreshPost() {
@@ -704,6 +717,7 @@ export default function PostDetail() {
   // Gửi reply vào reply cấp con
   async function handleReplyToReply(replyId, content) {
     const token = localStorage.getItem("access_token");
+
     await fetch(`${API_BASE_URL}/replies/${replyId}/child`, {
       method: "POST",
       headers: {
@@ -713,8 +727,45 @@ export default function PostDetail() {
       },
       body: JSON.stringify({ content }),
     });
-    loadReviewTree();
+
+    await loadReviewTree();
+    await refreshPost();
   }
+
+  // ===== SỬA / XÓA REPLY =====
+  async function handleEditReply(replyId, payload) {
+    const token = localStorage.getItem("access_token");
+
+    await fetch(`${API_BASE_URL}/replies/${replyId}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    await loadReviewTree();
+    await refreshPost();
+  }
+
+
+  async function handleDeleteReply(replyId) {
+    const token = localStorage.getItem("access_token");
+
+    await fetch(`${API_BASE_URL}/replies/${replyId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+    });
+
+    await loadReviewTree();
+    await refreshPost();
+  }
+
 
   // Sửa đánh giá (rating + content)
   async function handleEditReview(reviewId, payload) {
@@ -728,7 +779,8 @@ export default function PostDetail() {
       },
       body: JSON.stringify(payload),
     });
-    loadReviewTree();
+    await loadReviewTree();
+     await refreshPost();
   }
 
   // Xóa đánh giá
@@ -1092,99 +1144,89 @@ export default function PostDetail() {
       </section>
 
       {/* ====== ĐÁNH GIÁ & BÌNH LUẬN - FULL WIDTH BÊN DƯỚI ====== */}
-      {/* ====== ĐÁNH GIÁ & BÌNH LUẬN TREE ====== */}
+
+      {/* ====== ĐÁNH GIÁ & BÌNH LUẬN ====== */}
+
       <section className="pd-reviews-section">
         <article className="pd-card pd-reviews pd-reviews--full">
           <h2 className="pd-card__title">Đánh giá & bình luận</h2>
+          {/* ===== FORM ĐÁNH GIÁ (CHỈ HIỆN KHI CHƯA ĐÁNH GIÁ) ===== */}
+          {authUser && showReviewForm && (
+            <form className="pd-review-form" onSubmit={handleSubmitReview}>
+              <h3 className="pd-review-subtitle">
+                {editingReviewId ? 'Chỉnh sửa đánh giá' : 'Viết đánh giá của bạn'}
+              </h3>
 
-          {authUser ? (() => {
-            const myReview = (post?.reviews || []).find(
-              r => r.user_id === authUser?.id
-            )
+              {/* STAR RATING */}
+              <div className="pd-review-stars">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <button
+                    type="button"
+                    key={i}
+                    className={i < ratingInput ? 'is-on' : ''}
+                    onClick={() => setRatingInput(i + 1)}
+                  >
+                    ★
+                  </button>
+                ))}
+              </div>
 
-            return (
-              <div className="pd-review-area">
+              {/* CONTENT */}
+              <textarea
+                rows={4}
+                placeholder="Chia sẻ trải nghiệm của bạn..."
+                value={contentInput}
+                onChange={e => setContentInput(e.target.value)}
+                required
+              />
 
-                {/* COMMENT BOX (luôn hiển thị – giống Facebook) */}
-                <div
-                  className="pd-review-comment-box"
-                  onClick={() => {
-                    if (myReview) {
-                      // chỉnh sửa
-                      setRatingInput(myReview.rating || 5)
-                      setContentInput(myReview.content || '')
-                      setEditingReviewId(myReview.id)
-                    } else {
-                      // tạo mới
-                      setRatingInput(5)
-                      setContentInput('')
-                      setEditingReviewId(null)
-                    }
-                    setShowReviewForm(true)
-                  }}
-                >
-                  <div className="pd-review-comment-avatar">
-                    {authUser?.avatar_url ? (
-                      <img src={authUser.avatar_url} alt={authUser?.name || 'Bạn'} />
-                    ) : (
-                      (authUser?.name || 'U').charAt(0).toUpperCase()
-                    )}
-                  </div>
+              {reviewError && <p className="pd-error">{reviewError}</p>}
 
-                  <div className="pd-review-comment-placeholder">
-                    {myReview
-                      ? `${myReview.rating || 0} sao — ${myReview.content
-                        ? myReview.content.slice(0, 60) +
-                        (myReview.content.length > 60 ? '…' : '')
-                        : 'Bạn đã đánh giá'
-                      }`
-                      : 'Viết đánh giá về phòng này...'}
-                  </div>
+              <button
+                type="submit"
+                className="pd-btn pd-btn--primary"
+                disabled={submittingReview}
+              >
+                {submittingReview
+                  ? 'Đang gửi...'
+                  : editingReviewId
+                    ? 'Cập nhật đánh giá'
+                    : 'Gửi đánh giá'}
+              </button>
+            </form>
+          )}
+
+          {/* ===== ĐÁNH GIÁ CỦA BẠN ===== */}
+          {authUser && myReview && (
+            <div className="pd-my-review-box">
+              <h3 className="pd-review-subtitle">Đánh giá của bạn</h3>
+
+              <div className="pd-review-item is-own">
+                <div className="pd-review-item__avatar">
+                  {authUser.avatar_url ? (
+                    <img src={authUser.avatar_url} alt={authUser.name} />
+                  ) : (
+                    (authUser.name || 'U').charAt(0).toUpperCase()
+                  )}
                 </div>
 
-                {/* SUMMARY KHI ĐÃ ĐÁNH GIÁ (KHÔNG HIỆN FORM) */}
-                {myReview && !showReviewForm && (
-                  <div className="pd-my-review-summary">
-                    <div className="pd-my-review-meta">
-                      <div className="pd-review-item__avatar">
-                        {authUser?.avatar_url
-                          ? <img src={authUser.avatar_url} alt={authUser?.name} />
-                          : (authUser?.name || 'U').charAt(0).toUpperCase()}
-                      </div>
-
-                      <div style={{ marginLeft: 10 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <div className="pd-stars small">
-                            {Array.from({ length: 5 }).map((_, i) => (
-                              <span
-                                key={i}
-                                className={
-                                  i < Math.round(myReview.rating || 0)
-                                    ? 'is-on'
-                                    : ''
-                                }
-                              >
-                                ★
-                              </span>
-                            ))}
-                          </div>
-                          <strong style={{ fontSize: 14 }}>
-                            {authUser?.name || 'Bạn'}
-                          </strong>
-                        </div>
-
-                        {myReview.content && (
-                          <div style={{ marginTop: 6, color: '#cbd5e1' }}>
-                            {myReview.content}
-                          </div>
-                        )}
-                      </div>
+                <div className="pd-review-item__body">
+                  <div className="pd-review-item__top">
+                    <div className="pd-stars">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <span
+                          key={i}
+                          className={i < Math.round(myReview.rating || 0) ? 'is-on' : ''}
+                        >
+                          ★
+                        </span>
+                      ))}
                     </div>
 
-                    <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
+                    <div className="pd-review-actions">
                       <button
                         type="button"
-                        className="pd-btn pd-btn--ghost"
+                        className="pd-link"
                         onClick={() => {
                           setRatingInput(myReview.rating || 5)
                           setContentInput(myReview.content || '')
@@ -1192,21 +1234,15 @@ export default function PostDetail() {
                           setShowReviewForm(true)
                         }}
                       >
-                        Chỉnh sửa
+                        Sửa
                       </button>
 
                       <button
                         type="button"
-                        className="pd-btn"
-                        style={{
-                          background: 'transparent',
-                          border: '1px solid rgba(148,163,184,0.6)',
-                          color: '#e5e7eb',
-                        }}
+                        className="pd-link danger"
                         onClick={async () => {
                           if (!confirm('Bạn có chắc muốn xóa đánh giá này?')) return
                           await handleDeleteReview(myReview.id)
-                          await loadReviewTree()
                           await refreshPost()
                           setShowReviewForm(false)
                           setEditingReviewId(null)
@@ -1216,107 +1252,55 @@ export default function PostDetail() {
                       </button>
                     </div>
                   </div>
-                )}
 
-                {/* FORM MỞ RỘNG */}
-                {showReviewForm && (
-                  <form
-                    className="pd-review-form pd-review-form--expanded"
-                    onSubmit={handleSubmitReview}
-                    style={{ marginTop: 10 }}
-                  >
-                    <div style={{ display: 'flex', gap: 10 }}>
-                      <div className="pd-review-item__avatar">
-                        {authUser?.avatar_url
-                          ? <img src={authUser.avatar_url} alt={authUser?.name} />
-                          : (authUser?.name || 'U').charAt(0).toUpperCase()}
-                      </div>
-
-                      <div style={{ flex: 1 }}>
-                        <div className="pd-review-stars-input">
-                          {Array.from({ length: 5 }, (_, i) => {
-                            const star = i + 1
-                            return (
-                              <span
-                                key={star}
-                                className={
-                                  'pd-star-btn' +
-                                  (star <= ratingInput ? ' is-on' : '')
-                                }
-                                onClick={() => setRatingInput(star)}
-                              >
-                                ★
-                              </span>
-                            )
-                          })}
-                        </div>
-
-                        <textarea
-                          rows="3"
-                          placeholder="Viết nhận xét về phòng này..."
-                          value={contentInput}
-                          onChange={e => setContentInput(e.target.value)}
-                        />
-
-                        {reviewError && (
-                          <p className="pd-review-error">{reviewError}</p>
-                        )}
-
-                        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                          <button
-                            type="submit"
-                            className="pd-btn pd-btn--primary"
-                            disabled={submittingReview}
-                          >
-                            {editingReviewId ? 'Cập nhật' : 'Gửi đánh giá'}
-                          </button>
-
-                          <button
-                            type="button"
-                            className="pd-btn pd-btn--ghost"
-                            onClick={() => {
-                              setShowReviewForm(false)
-                              setEditingReviewId(null)
-                              setContentInput('')
-                              setRatingInput(5)
-                            }}
-                          >
-                            Hủy
-                          </button>
-                        </div>
-                      </div>
+                  {myReview.content && (
+                    <div className="pd-review-item__content">
+                      {myReview.content}
                     </div>
-                  </form>
-                )}
+                  )}
+                </div>
               </div>
-            )
-          })() : (
-            <div className="pd-review-login-cta">
-              <p>
-                Bạn cần <Link to="/login">đăng nhập</Link> để gửi đánh giá.
-              </p>
             </div>
           )}
 
-          {/* REVIEW TREE – GIỮ NGUYÊN */}
-          <div className="rv-tree-list">
-            {reviewTree.map(rv => (
-              <ReviewTree
-                key={rv.id}
-                postId={post.id}
-                review={rv}
-                replies={rv.replies || []}
-                onReplySubmit={handleReplySubmit}
-                onReplyToReply={handleReplyToReply}
-                onEditReview={handleEditReview}
-                onDeleteReview={handleDeleteReview}
-                currentUserId={authUser?.id}
-                currentUser={authUser}
-              />
-            ))}
+          {/* ===== ĐÁNH GIÁ CỘNG ĐỒNG ===== */}
+          <div className="pd-community-reviews">
+            <h3 className="pd-review-subtitle">
+              Các đánh giá từ cộng đồng ({communityReviews.length})
+            </h3>
+
+            {communityReviews.length === 0 && (
+              <div className="pd-review-empty">
+                <div className="pd-review-empty__icon">💬</div>
+                <p>
+                  Chưa có đánh giá nào. Hãy là người đầu tiên chia sẻ trải nghiệm!
+                </p>
+              </div>
+            )}
+
+            <div className="rv-tree-list">
+             {communityReviews.map(rv => (
+                <ReviewTree
+                  key={rv.id}
+                  postId={post.id}
+                  review={rv}
+                  replies={rv.children || rv.replies || []}
+                  onReplySubmit={handleReplySubmit}
+                  onReplyToReply={handleReplyToReply}
+                  onEditReview={handleEditReview}
+                  onDeleteReview={handleDeleteReview}
+                  onEditReply={handleEditReply}
+                  onDeleteReply={handleDeleteReply}
+                  currentUserId={authUser?.id}
+                  currentUser={authUser}
+                />
+              ))}
+
+            </div>
           </div>
         </article>
-      </section>
+      </section>  
+
 
 
 

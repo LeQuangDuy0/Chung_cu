@@ -1927,3 +1927,122 @@
   opacity: 0;
   pointer-events: none;
 }
+.pd-review-actions{
+  border-radius: 5px;
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+}
+.pd-review-actions button{
+  background-color: #8b8b8bc5;
+  padding: 5px 10px;
+  border-radius: 5px;
+}
+/* Container của form đánh giá */
+.pd-review-form {
+  background-color: #1e293b;;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  padding: 24px;
+  margin-top: 20px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.pd-review-subtitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #dfdfe0;
+  margin-bottom: 16px;
+  margin-top: 0;
+}
+
+/* Phần ngôi sao */
+.pd-review-stars {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.pd-review-stars button {
+  background: transparent;
+  border: none;
+  font-size: 32px; /* Sao to hơn cho dễ bấm */
+  line-height: 1;
+  cursor: pointer;
+  color: #cbd5e1; /* Màu xám khi chưa chọn */
+  transition: transform 0.2s, color 0.2s;
+  padding: 0;
+}
+
+.pd-review-stars button.is-on {
+  color: #fbbf24; /* Màu vàng sáng */
+  text-shadow: 0 0 2px #f59e0b;
+}
+
+.pd-review-stars button:hover {
+  transform: scale(1.2); /* Hiệu ứng phóng to khi di chuột */
+  color: #fbbf24;
+}
+
+/* Phần ô nhập nội dung */
+.pd-review-form textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 12px 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #262626;
+  resize: vertical; /* Cho phép kéo giãn chiều dọc */
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background-color: #f8fafc;
+  display: block;
+  margin-bottom: 16px;
+  box-sizing: border-box; /* Đảm bảo padding không làm vỡ layout */
+}
+
+.pd-review-form textarea:focus {
+  border-color: #059669; /* Màu xanh lá chủ đạo */
+  background-color: #fff;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+}
+
+.pd-review-form textarea::placeholder {
+  color: #94a3b8;
+}
+
+/* Thông báo lỗi */
+.pd-error {
+  color: #ef4444;
+  font-size: 13px;
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+/* Nút gửi */
+.pd-btn--primary {
+  background-color: #059669;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 15px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%; /* Nút full chiều rộng nhìn cho rõ */
+}
+
+.pd-btn--primary:hover {
+  background-color: #047857;
+  transform: translateY(-1px);
+}
+
+.pd-btn--primary:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+}

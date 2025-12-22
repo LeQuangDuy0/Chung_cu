@@ -1,13 +1,12 @@
 <?php
 
 namespace App\Http\Controllers;
-
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Review;
 use App\Models\Post;
 use App\Models\Notification;
-use App\Models\ReviewReply;   // <<< THIẾU CÁI NÀY — PHẢI THÊM
+
 
 class ReviewController extends Controller
 {
@@ -17,6 +16,9 @@ class ReviewController extends Controller
      */
     public function all(Request $request)
     {
+    
+
+
         $perPage = (int) $request->query('per_page', 12);
         if ($perPage <= 0) {
             $perPage = 12;
@@ -176,6 +178,17 @@ class ReviewController extends Controller
             'message' => 'Đã tạo đánh giá thành công.',
             'data'    => $review,
         ], 201);
+        $exists = Review::where('post_id', $post_id)
+    ->where('user_id', $user->id)
+    ->whereNull('parent_id') // Quan trọng: chỉ check bài gốc
+    ->exists();
+
+if ($exists) {
+    return response()->json([
+        'status' => false,
+        'message' => 'Bạn đã đánh giá bài viết này rồi.'
+    ], 409);
+}
     }
 
     /**
@@ -387,104 +400,128 @@ class ReviewController extends Controller
      * REPLY VÀO REVIEW GỐC
      * POST /api/reviews/{id}/replies
      */
-    public function replyReview(Request $request, $reviewId)
-    {
-        $user = Auth::user();
-        if (!$user) {
-            return response()->json([
-                'status'  => false,
-                'message' => 'Bạn phải đăng nhập để trả lời.',
-            ], 401);
-        }
+public function replyReview(Request $request, $reviewId)
+{
+    $request->validate([
+        'content' => 'required|string',
+    ]);
 
-        $request->validate([
-            'content' => 'required|string'
-        ]);
+    $parent = Review::findOrFail($reviewId);
 
-        $review = Review::find($reviewId);
-        if (!$review) {
-            return response()->json([
-                'status'  => false,
-                'message' => 'Không tìm thấy đánh giá.',
-            ], 404);
-        }
+    $reply = Review::create([
+        'post_id'   => $parent->post_id,
+        'user_id'   => auth()->id(),
+        'parent_id' => $parent->id,
+        'content'   => $request->content,
+        'rating'    => null,
+        'is_hidden' => false,
+    ]);
 
-        $reply = ReviewReply::create([
-            'review_id' => $review->id,
-            'user_id'   => $user->id,
-            'content'   => $request->input->{'content'},
-            'parent_id' => null,
-        ]);
+    return response()->json([
+        'status' => true,
+        'data'   => $reply
+    ]);
+}
 
+
+
+public function updateReply(Request $request, $id)
+{
+    $reply = Review::findOrFail($id);
+
+    // chỉ chủ reply mới được sửa
+    if ($reply->user_id !== auth()->id()) {
         return response()->json([
-            'status' => true,
-            'data'   => $reply
-        ]);
+            'status' => false,
+            'message' => 'Bạn không có quyền sửa bình luận này'
+        ], 403);
     }
 
+    $request->validate([
+        'content' => 'required|string',
+    ]);
+
+    $reply->update([
+        'content' => $request->content,
+    ]);
+
+    return response()->json([
+        'status' => true,
+        'data' => $reply
+    ]);
+}
+
+public function deleteReply($id)
+{
+    $reply = Review::findOrFail($id);
+
+    // chỉ chủ reply mới được xóa
+    if ($reply->user_id !== auth()->id()) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Bạn không có quyền xóa bình luận này'
+        ], 403);
+    }
+
+    $reply->delete();
+
+    return response()->json([
+        'status' => true
+    ]);
+}
 
     /**
      * TRẢ LỜI VÀO MỘT REPLY CON
      * POST /api/replies/{replyId}/child
      */
-    public function replyChild(Request $request, $replyId)
-    {
-        $user = Auth::user();
+   // POST /api/replies/{id}/child
+public function replyChild(Request $request, $replyId)
+{
+    $request->validate([
+        'content' => 'required|string',
+    ]);
 
-        if (!$user) {
-            return response()->json([
-                'status'  => false,
-                'message' => 'Bạn phải đăng nhập để trả lời.',
-            ], 401);
-        }
+    $parent = Review::findOrFail($replyId);
 
-        $request->validate([
-            'content' => 'required|string'
-        ]);
+    $reply = Review::create([
+        'post_id'   => $parent->post_id,
+        'user_id'   => auth()->id(),
+        'parent_id' => $parent->id,
+        'content'   => $request->content,
+        'rating'    => null,
+        'is_hidden' => false,
+    ]);
 
-        $parent = ReviewReply::find($replyId);
-        if (!$parent) {
-            return response()->json([
-                'status'  => false,
-                'message' => 'Không tìm thấy bình luận để trả lời.',
-            ], 404);
-        }
+    return response()->json([
+        'status' => true,
+        'data'   => $reply
+    ]);
+}
 
-        $reply = ReviewReply::create([
-            'review_id' => $parent->review_id,
-            'user_id'   => $user->id,
-            'content'   => $request->input->{'content'},
-            'parent_id' => $parent->id,
-        ]);
-
-        return response()->json([
-            'status' => true,
-            'data'   => $reply
-        ]);
-    }
 
 
     /**
      * TẢI REVIEW TREE ĐẦY ĐỦ
      * GET /api/posts/{postId}/review-tree
      */
-    public function getTree($postId)
-    {
-        $reviews = Review::with([
-            'user:id,name,avatar_url',
-            'replies.user:id,name,avatar_url',
-            'replies.children.user:id,name,avatar_url',
-        ])
-        ->where('post_id', $postId)
-        ->where('is_hidden', false)
-        ->orderBy('created_at', 'desc')
-        ->get();
+        public function getTree($postId)
+        {
+            $reviews = Review::with([
+                'user:id,name,avatar_url',
+                'replies.user:id,name,avatar_url',
+                'replies.children.user:id,name,avatar_url',
+            ])
+            ->where('post_id', $postId)
+             ->whereNull('parent_id')
+            ->where('is_hidden', false)
+            ->orderBy('created_at', 'desc')
+            ->get();
 
-        return response()->json([
-            'status' => true,
-            'data'   => $reviews
-        ]);
-    }
+            return response()->json([
+                'status' => true,
+                'data'   => $reviews
+            ]);
+        }
 
 
 }

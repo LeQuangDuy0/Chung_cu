@@ -79,7 +79,7 @@ Route::get('/environment-features', [EnvironmentFeatureController::class, 'index
 
 // ================== REVIEWS PUBLIC ==================
 Route::get('/posts/{postId}/reviews', [ReviewController::class, 'index']);
-
+Route::get('/posts/{postId}/review-tree', [ReviewController::class, 'getTree']);
 
 // ================== FORGOT / RESET PASSWORD PUBLIC ==================
 Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetToken']);
@@ -108,11 +108,17 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
     // ================== REVIEW TREE ==================
-    // review tree (full threads)
-    Route::get('/posts/{postId}/review-tree', [ReviewController::class, 'getTree']);
+  
 
     // create a review for a post
     Route::post('/posts/{postId}/reviews', [ReviewController::class, 'store']);
+// ===== REVIEW (EDIT / DELETE) =====
+Route::put('/reviews/{id}', [ReviewController::class, 'update']);
+Route::delete('/reviews/{id}', [ReviewController::class, 'destroy']);
+
+    Route::put('/replies/{id}', [ReviewController::class, 'updateReply']);
+
+    Route::delete('/replies/{id}', [ReviewController::class, 'deleteReply']);
 
     // reply to a review
     Route::post('/reviews/{id}/replies', [ReviewController::class, 'replyReview']);
@@ -234,4 +240,4 @@ Route::put('/posts/{id}/status', [PostController::class, 'updateStatus']);
     Route::get('/lessor/stats', [LessorController::class, 'stats']);
     Route::get('/lessor/reviews', [LessorController::class, 'reviews']);
 });
-Route::middleware('auth:sanctum')->get('/lessor/posts', [PostController::class, 'index']);
+
