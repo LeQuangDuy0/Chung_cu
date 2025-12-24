@@ -328,6 +328,81 @@ body {
 .notifications-menu__list::-webkit-scrollbar, .notifications-menu__detail::-webkit-scrollbar { width:8px; }
 .notifications-menu__list::-webkit-scrollbar-thumb, .notifications-menu__detail::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.08); border-radius:8px; }
 
+/* =========================
+   MOBILE RESPONSIVE (no desktop changes)
+   Applies only on small screens and only augments existing styles
+   ========================= */
+@media (max-width: 768px) {
+  .container { padding: 8px; }
+  .container--main { padding: 12px 8px 80px; }
+
+  /* header compact */
+  .site-header__inner { height: 56px; gap: 8px; }
+  .brand img { height: 44px; width:44px; }
+  .nav { display: none; }
+
+  /* notifications menu full width */
+  .notifications-menu { min-width: unset; width: 100vw; right: 0; left: 0; top: 56px; max-height: calc(100vh - 120px); }
+  .notifications-menu__list, .notifications-menu__detail { width: 100%; }
+
+  /* make tables horizontally scrollable */
+  .admin-table-wrap { overflow-x: auto; }
+  .admin-table { min-width: 720px; }
+
+  /* Compact long table cells on mobile */
+  .admin-table td, .admin-table th { white-space: nowrap; }
+  .admin-td-title .admin-link { display:inline-block; max-width:160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .admin-td-address { max-width: 160px; }
+  .admin-td-address-main, .admin-td-address-sub { display:block; overflow: hidden; text-overflow: ellipsis; }
+  .admin-td-address-main { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+  .admin-td-address-sub { font-size: 12px; color: #9fb0c8; opacity: 0.9; }
+
+  /* modals become full-screen scrollable */
+  .modal-overlay { padding: 12px; }
+  .modal-box {
+    width: 100%;
+    max-width: calc(100vw - 24px);
+    margin: 12px auto;
+    border-radius: 10px;
+    max-height: calc(100vh - 24px);
+    overflow: auto;
+  }
+
+  /* sticky modal actions for easier access on mobile */
+  .modal-actions {
+    position: sticky;
+    bottom: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0), rgba(2,6,23,0.9));
+    padding: 12px;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    z-index: 60;
+  }
+
+  /* enlarge tappable controls */
+  .admin-btn { padding: 10px 14px; font-size: 15px; }
+  .admin-td-actions button { padding: 10px 12px; }
+
+  /* make images responsive in modals */
+  .cccd-large { width: 100%; height: auto; max-width: 260px; }
+
+  /* post detail gallery modal adjustments */
+  .pd-gallery-modal { width: 100vw; max-width: calc(100vw - 24px); height: calc(100vh - 80px); }
+
+  /* ensure inputs and textareas are large enough */
+  input, select, textarea { font-size: 15px; }
+
+  /* further compact table presentation on small screens */
+  @media (max-width: 480px) {
+    .admin-table td, .admin-table th { font-size: 13px; padding: 8px; }
+    .admin-td-title .admin-link { max-width: 120px; }
+    .admin-td-address { max-width: 120px; }
+    .admin-td-address-main { -webkit-line-clamp: 2; }
+  }
+}
+
+
 
 
 
@@ -1250,7 +1325,7 @@ body {
   top: 0;
   right: 0;
   bottom: 0;
-  width: 260px;
+  width: 320px;
   background: radial-gradient(circle at top, #020617, #020617 60%, #0b1120);
   border-left: 1px solid rgba(148, 163, 184, 0.5);
   transform: translateX(100%);
@@ -1269,6 +1344,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  width: 100%;
+   background: linear-gradient(180deg, rgba(2,6,23,0.98), rgba(2,6,23,0.96));
 }
 
 /* block user (avatar + tên) trong drawer */

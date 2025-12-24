@@ -408,11 +408,72 @@ export default function Header() {
             <button
               className={'header-burger' + (drawerOpen ? ' is-active' : '')}
               onClick={() => setDrawerOpen(prev => !prev)}
+              aria-label="Mở menu"
             >
               <span />
               <span />
               <span />
             </button>
+
+            {/* MOBILE DRAWER */}
+            {drawerOpen && (
+              <>
+                <div className={'header-drawer__backdrop' + (drawerOpen ? ' is-open' : '')} onClick={() => setDrawerOpen(false)} />
+
+                <aside className={'header-drawer' + (drawerOpen ? ' is-open' : '')} role="dialog" aria-label="Menu">
+                  <div className="header-drawer__inner">
+
+                    {user ? (
+                      <div className="header-drawer__user">
+                        <div className="header-drawer__avatar">
+                          {avatarUrl ? <img src={avatarUrl} alt={user.name} /> : <span>{avatarChar}</span>}
+                        </div>
+                        <div>
+                          <p className="header-drawer__name">{user.name}</p>
+                          <p className="header-drawer__role">{user.role === 'admin' ? 'Quản trị viên' : (user.role === 'lessor' ? 'Chủ trọ' : 'Người dùng')}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="header-drawer__auth">
+                        <button className="header-drawer__btn" onClick={() => { setShowLogin(true); setDrawerOpen(false) }}>Đăng nhập</button>
+                        <button className="header-drawer__btn" onClick={() => { setShowRegister(true); setDrawerOpen(false) }}>Đăng ký</button>
+                      </div>
+                    )}
+
+                    <nav className="header-drawer__nav">
+                      {navCategories.map(cat => (
+                        <Link key={cat.id} to={`/${cat.slug}`} className="header-drawer__link" onClick={() => setDrawerOpen(false)}>
+                          {cat.name}
+                        </Link>
+                      ))}
+
+                      <Link to="/phong-tro" className="header-drawer__link" onClick={() => setDrawerOpen(false)}>Phòng trọ</Link>
+                      <Link to="/nha-nguyen-can" className="header-drawer__link" onClick={() => setDrawerOpen(false)}>Nhà nguyên căn</Link>
+                      <Link to="/can-ho" className="header-drawer__link" onClick={() => setDrawerOpen(false)}>Căn hộ</Link>
+                      <Link to="/ky-tuc-xa" className="header-drawer__link" onClick={() => setDrawerOpen(false)}>Ký túc xá</Link>
+
+                      <Link to="/reviews" className="header-drawer__link" onClick={() => setDrawerOpen(false)}>Review</Link>
+                      <Link to="/blog" className="header-drawer__link" onClick={() => setDrawerOpen(false)}>Blog</Link>
+
+                      {user && (
+                        <>
+                          <button className="header-drawer__btn" onClick={() => { setShowSettings(true); setDrawerOpen(false) }}>Cài đặt tài khoản</button>
+                          {user.role === 'admin' && (
+                            <button className="header-drawer__btn" onClick={() => { handleGoAdmin(); setDrawerOpen(false) }}>Khu vực quản trị</button>
+                          )}
+                          {user.role === 'lessor' && (
+                            <button className="header-drawer__btn" onClick={() => { navigate('/lessor'); setDrawerOpen(false) }}>Trung tâm quản lý</button>
+                          )}
+                          <button className="header-drawer__btn header-drawer__btn--danger" onClick={() => { handleLogout(); setDrawerOpen(false) }}>Đăng xuất</button>
+                        </>
+                      )}
+
+                    </nav>
+
+                  </div>
+                </aside>
+              </>
+            )}
 
           </div>
         </div>

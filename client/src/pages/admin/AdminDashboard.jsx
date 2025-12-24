@@ -468,9 +468,7 @@ export default function AdminDashboard() {
         </div>
 
         <div className="admin-header__actions">
-          <Link to="/admin/posts/create" className="admin-btn admin-btn--primary">
-            + Đăng bài mới
-          </Link>
+          
         </div>
       </header>
 
@@ -619,11 +617,9 @@ export default function AdminDashboard() {
                         <div className="admin-td-sub">{post.area} m²</div>
                       </td>
 
-                      <td>
-                        {post.address}
-                        <div className="admin-td-sub">
-                          {post.ward?.name}, {post.district?.name}, {post.province?.name}
-                        </div>
+                      <td className="admin-td-address">
+                        <div className="admin-td-address-main">{post.address}</div>
+                        <div className="admin-td-sub admin-td-address-sub">{post.ward?.name}, {post.district?.name}, {post.province?.name}</div>
                       </td>
 
                       <td>{post.category?.name}</td>

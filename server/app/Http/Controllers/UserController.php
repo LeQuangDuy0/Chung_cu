@@ -456,17 +456,13 @@ public function requestLessor(Request $request)
         $user->save();
 
         // Thông báo cho user rằng yêu cầu đã được chấp nhận
-        try {
-            Notification::create([
-                'user_id' => $user->id,
-                'type' => 'lessor_approved',
-                'content' => 'Yêu cầu đăng ký làm chủ trọ của bạn đã được chấp nhận.',
-                'is_read' => false,
-                'data' => ['lessor_request_id' => $lessorRequest->id],
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('Failed to create notification for lessor approve', ['err' => $e->getMessage(), 'request_id' => $lessorRequest->id]);
-        }
+        Notification::create([
+            'user_id' => $user->id,
+            'type' => 'lessor_approved',
+            'content' => 'Yêu cầu đăng ký làm chủ trọ của bạn đã được chấp nhận.',
+            'is_read' => false,
+            'data' => ['lessor_request_id' => $lessorRequest->id],
+        ]);
 
         return response()->json([
             'status' => true,
@@ -508,25 +504,20 @@ public function requestLessor(Request $request)
         $lessorRequest->rejection_reason = $request->reason;
         $lessorRequest->save();
 
-
         // Thông báo cho user rằng yêu cầu đã bị từ chối cùng lý do
-        try {
-            Notification::create([
-                'user_id' => $lessorRequest->user_id,
-                'type' => 'lessor_rejected',
-                'content' => 'Yêu cầu đăng ký làm chủ trọ của bạn đã bị từ chối. Lý do: ' . $lessorRequest->rejection_reason,
-                'is_read' => false,
-                'data' => ['lessor_request_id' => $lessorRequest->id],
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('Failed to create notification for lessor reject', ['err' => $e->getMessage(), 'request_id' => $lessorRequest->id]);
-        }
+        Notification::create([
+            'user_id' => $lessorRequest->user_id,
+            'type' => 'lessor_rejected',
+            'content' => 'Yêu cầu đăng ký làm chủ trọ của bạn đã bị từ chối. Lý do: ' . $lessorRequest->rejection_reason,
+            'is_read' => false,
+            'data' => ['lessor_request_id' => $lessorRequest->id],
+        ]);
 
         return response()->json([
             'status' => true,
             'message' => 'Yêu cầu đã bị từ chối.',
             'data' => [
-                'lessor_request_id' => $lessorRequest->id,
+                        'lessor_request_id' => $lessorRequest->id,
                 'status' => $lessorRequest->status,
                 'rejection_reason' => $lessorRequest->rejection_reason,
             ],
@@ -554,15 +545,16 @@ public function requestLessor(Request $request)
             ], 404);
         }
 
-        try {
-            $lessorRequest->delete();
-        } catch (\Exception $e) {
-            \Log::error('Failed to delete lessor request', ['err' => $e->getMessage(), 'request_id' => $id]);
-            return response()->json([
-                'status' => false,
-                'message' => 'Không thể xoá yêu cầu.',
-            ], 500);
-        }
+        // optionally notify the user that their request was removed
+        Notification::create([
+            'user_id' => $lessorRequest->user_id,
+            'type' => 'lessor_deleted',
+            'content' => 'Yêu cầu đăng ký làm chủ trọ của bạn đã bị xoá bởi quản trị viên.',
+            'is_read' => false,
+            'data' => ['lessor_request_id' => $lessorRequest->id],
+        ]);
+
+        $lessorRequest->delete();
 
         return response()->json([
             'status' => true,
