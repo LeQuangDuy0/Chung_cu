@@ -34,6 +34,27 @@ function normalizeErrorMessage(err) {
   return msg
 }
 
+function extractApiError(data) {
+  if (!data) return null
+  if (data.message) return data.message
+  if (data.errors) {
+    // flatten validation errors
+    try {
+      return Object.values(data.errors).flat().join(' ')
+    } catch { return null }
+  }
+  return null
+} 
+
+function formatDateTime(s) {
+  try {
+    if (!s) return '—'
+    const d = new Date(s)
+    if (isNaN(d)) return '—'
+    return d.toLocaleString('vi-VN')
+  } catch { return '—' }
+}
+
 export default function AdminDashboard() {
   const token = localStorage.getItem("access_token")
 
@@ -63,6 +84,11 @@ export default function AdminDashboard() {
   const [lessorRequests, setLessorRequests] = useState([])
   const [lessorLoading, setLessorLoading] = useState(false)
   const [lessorError, setLessorError] = useState("")
+  const [actionError, setActionError] = useState("")
+  const [actionMessage, setActionMessage] = useState("")
+  const [lastActionAttempt, setLastActionAttempt] = useState(null)
+  const [isRejecting, setIsRejecting] = useState(false)
+  const [rejectReason, setRejectReason] = useState("")
 
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -146,26 +172,36 @@ export default function AdminDashboard() {
   }, [status, categoryId, q, page, token])
 
   // ================== LOAD LESSOR REQUESTS ==================
+  const loadLessorRequests = async () => {
+    try {
+      setLessorLoading(true)
+
+      const res = await fetch(`${API_BASE_URL}/admin/lessor-requests`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+
+      const data = await safeJson(res)
+      if (!res.ok) throw new Error(data?.message)
+
+      const all = data?.data || data || []
+      // Chỉ hiển thị những yêu cầu chờ xử lý (pending)
+      const pending = all.filter(r => String(r.status).toLowerCase() === 'pending')
+      setLessorRequests(pending)
+
+    } catch (err) {
+      setLessorError(normalizeErrorMessage(err))
+    } finally {
+      setLessorLoading(false)
+    }
+  }
+
   useEffect(() => {
-    ; (async () => {
-      try {
-        setLessorLoading(true)
+    // initial load
+    loadLessorRequests()
 
-        const res = await fetch(`${API_BASE_URL}/admin/lessor-requests`, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-
-        const data = await safeJson(res)
-        if (!res.ok) throw new Error(data?.message)
-
-        setLessorRequests(data?.data || data)
-
-      } catch (err) {
-        setLessorError(normalizeErrorMessage(err))
-      } finally {
-        setLessorLoading(false)
-      }
-    })()
+    // Polling to keep list in sync across admins (every 10s)
+    const iv = setInterval(loadLessorRequests, 10000)
+    return () => clearInterval(iv)
   }, [token])
 
   // ================== POST ACTION ==================
@@ -192,8 +228,13 @@ export default function AdminDashboard() {
         )
       )
 
+      setActionMessage('Cập nhật trạng thái thành công')
+      setTimeout(() => setActionMessage(''), 3000)
+
     } catch (err) {
-      alert(err.message)
+      const msg = String(err?.message || err)
+      setActionError(msg)
+      setTimeout(() => setActionError(''), 5000)
     }
   }
 
@@ -219,8 +260,13 @@ export default function AdminDashboard() {
         )
       )
 
+      setActionMessage('Duyệt bài thành công')
+      setTimeout(() => setActionMessage(''), 3000)
+
     } catch (err) {
-      alert(err.message)
+      const msg = String(err?.message || err)
+      setActionError(msg)
+      setTimeout(() => setActionError(''), 5000)
     }
   }
 
@@ -238,16 +284,30 @@ export default function AdminDashboard() {
 
       setPosts(prev => prev.filter(p => p.id !== postId))
 
+      setActionMessage('Xoá bài thành công')
+      setTimeout(() => setActionMessage(''), 3000)
+
     } catch (err) {
-      alert(err.message)
+      const msg = String(err?.message || err)
+      setActionError(msg)
+      setTimeout(() => setActionError(''), 5000)
     }
   }
 
   // ================== LESSOR REQUEST ACTION ==================
   const handleLessorAction = async (id, action) => {
+    // clear previous action error and remember this attempt so user can retry
+    setActionError("")
+    setLastActionAttempt({ id, action })
+
+    // construct url and method properly
     let url = `${API_BASE_URL}/admin/lessor-requests/${id}/${action}`;
     let method = "POST";
-    if (action === "delete") method = "DELETE";
+    if (action === "delete") {
+      // delete endpoint is DELETE /admin/lessor-requests/{id}
+      url = `${API_BASE_URL}/admin/lessor-requests/${id}`
+      method = "DELETE";
+    }
 
     if (!confirm("Chắc chắn?")) return;
 
@@ -258,23 +318,100 @@ export default function AdminDashboard() {
       });
 
       const data = await safeJson(res);
-      if (!res.ok) throw new Error(data?.message || "Lỗi không xác định");
+      if (!res.ok) {
+        const errMsg = extractApiError(data) || data?.message || "Lỗi không xác định"
+        throw new Error(errMsg)
+      }
 
-      // ==========================
-      // 🔥 FIX QUAN TRỌNG NHẤT
-      // Xoá yêu cầu khỏi danh sách ngay lập tức
-      // ==========================
-      setLessorRequests(prev =>
-        prev.filter(r => r.id !== id)
-      );
-
-      // 🔥 Tự đóng modal
+      setLessorRequests(prev => prev.filter(r => r.id !== id));
       setSelectedRequest(null);
 
+      // refresh from server to ensure global consistency
+      await loadLessorRequests()
+
+      // non-blocking success feedback
+      setActionMessage(data?.message || 'Thao tác thành công')
+      setTimeout(() => setActionMessage(''), 3500)
+
     } catch (err) {
-      alert(err.message);
+      console.error('Lessor action error', err)
+
+      const msg = String(err?.message || err)
+      const isNetwork = msg.includes('Failed to fetch') || err instanceof TypeError
+      const userMessage = isNetwork
+        ? `Không thể kết nối tới API (${API_BASE_URL}). Kiểm tra backend đang chạy và cấu hình CORS.`
+        : (msg || 'Có lỗi khi xử lý yêu cầu.')
+
+      // surface the error inline in the modal and allow retry
+      setActionError(userMessage)
+
+      // Only try to refresh list if it's not a network error
+      if (!isNetwork) {
+        try {
+          const res2 = await fetch(`${API_BASE_URL}/admin/lessor-requests`, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+          const d2 = await safeJson(res2)
+          const fresh = res2.ok ? (d2?.data || d2 || []) : []
+          setLessorRequests(fresh)
+          const exists = fresh.some(r => r.id === id)
+          if (!exists) {
+            // non-blocking notice to user
+            setActionMessage('Hành động có vẻ đã thực hiện thành công nhưng server trả lỗi. Danh sách đã được làm mới.')
+            setTimeout(() => setActionMessage(''), 3500)
+            setSelectedRequest(null)
+            setActionError("")
+            return
+          }
+        } catch (e) {
+          console.error('Refresh lessor requests failed', e)
+        }
+      }
+
     }
   };
+
+  const submitReject = async () => {
+    if (!selectedRequest) return
+    if (!rejectReason || !rejectReason.trim()) {
+      setActionError('Vui lòng nhập lý do từ chối')
+      return
+    }
+
+    setActionError("")
+    setLastActionAttempt({ id: selectedRequest.id, action: 'reject', body: { reason: rejectReason } })
+
+    const url = `${API_BASE_URL}/admin/lessor-requests/${selectedRequest.id}/reject`
+
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: rejectReason })
+      })
+
+      const data = await safeJson(res)
+      if (!res.ok) {
+        const errMsg = extractApiError(data) || data?.message || 'Lỗi khi từ chối yêu cầu'
+        throw new Error(errMsg)
+      }
+
+      // success
+      setLessorRequests(prev => prev.filter(r => r.id !== selectedRequest.id))
+      setSelectedRequest(null)
+      setIsRejecting(false)
+      setRejectReason('')
+      await loadLessorRequests()
+      setActionMessage(data?.message || 'Yêu cầu đã bị từ chối')
+      setTimeout(() => setActionMessage(''), 3500)
+
+    } catch (err) {
+      console.error('Reject failed', err)
+      const msg = String(err?.message || err)
+      const isNetwork = msg.includes('Failed to fetch') || err instanceof TypeError
+      setActionError(isNetwork ? `Không thể kết nối tới API (${API_BASE_URL}). Kiểm tra backend đang chạy và cấu hình CORS.` : msg)
+    }
+  }
 
 
   const resetFilters = () => {
@@ -357,6 +494,31 @@ export default function AdminDashboard() {
         <div className="admin-stat">
           <p className="admin-stat__label">Bài đã lưu</p>
           <p className="admin-stat__value">{stats.total_saved}</p>
+        </div>
+      </section>
+
+      {/* Simple inline bar chart (no deps) */}
+      <section className="admin-section">
+        <h3>Biểu đồ nhanh</h3>
+        <div style={{display:'flex', gap:20, alignItems:'flex-end', padding:'10px 0'}}>
+          {(() => {
+            const values = [
+              {k:'posts', v: stats.total_posts || 0, color:'#2563eb'},
+              {k:'users', v: stats.total_users || 0, color:'#16a34a'},
+              {k:'reviews', v: stats.total_reviews || 0, color:'#f59e0b'},
+              {k:'saved', v: stats.total_saved || 0, color:'#ef4444'},
+            ]
+            const max = Math.max(...values.map(x => x.v), 1)
+            return values.map(item => (
+              <div key={item.k} style={{flex:1, textAlign:'center'}}>
+                <div style={{height:120, display:'flex', alignItems:'flex-end', justifyContent:'center'}}>
+                  <div style={{width:36, height:`${Math.round((item.v/max)*100)}%`, background:item.color, borderRadius:6}} title={`${item.v}`} />
+                </div>
+                <div style={{marginTop:8, fontSize:13}}>{item.v}</div>
+                <div style={{fontSize:12, color:'#666'}}>{item.k}</div>
+              </div>
+            ))
+          })()}
         </div>
       </section>
 
@@ -538,7 +700,7 @@ export default function AdminDashboard() {
 
       {/* ================= LESSOR REQUESTS ================= */}
       <section className="admin-section">
-        <h2>Yêu cầu trở thành người cho thuê</h2>
+        <h2>Yêu cầu (chờ xử lý)</h2>
 
         {lessorError && <p className="admin-error">{lessorError}</p>}
         {lessorLoading && <p className="admin-loading">Đang tải…</p>}
@@ -631,7 +793,7 @@ export default function AdminDashboard() {
             <p><b>Số điện thoại:</b> {selectedRequest.phone_number}</p>
             <p><b>Ngày sinh:</b> {new Date(selectedRequest.date_of_birth).toLocaleDateString("vi-VN")}</p>
             <p><b>Trạng thái:</b> {selectedRequest.status}</p>
-            <p><b>Ngày gửi:</b> {(selectedRequest.created_at)}</p>
+            <p><b>Ngày gửi:</b> {formatDateTime(selectedRequest.created_at)}</p>
             
             <div className="cccd-preview-wrapper">
               <div>
@@ -645,6 +807,65 @@ export default function AdminDashboard() {
               </div>
             </div>
 
+            {actionMessage && (
+              <div className="admin-success" style={{marginBottom:12, background:'#e6fffa', color:'#064e3b', padding:12, borderRadius:8}}>
+                <div style={{fontWeight:600, marginBottom:6}}>Hoàn thành</div>
+                <div style={{marginBottom:4}}>{actionMessage}</div>
+              </div>
+            )}
+
+            {actionError && (
+              <div className="admin-error" style={{marginBottom:12}}>
+                <div style={{fontWeight:600, marginBottom:6}}>Lỗi khi thực hiện hành động</div>
+                <div style={{marginBottom:8}}>{actionError}</div>
+                <div style={{display:'flex', gap:8}}>
+                  <button
+                    className="admin-btn admin-btn--ghost"
+                    onClick={() => {
+                      if (lastActionAttempt) {
+                        const { id, action, body } = lastActionAttempt
+                        if (action === 'reject') {
+                          // if we had a body (reason), ensure UI has it and submit
+                          if (body?.reason) {
+                            setRejectReason(body.reason)
+                            submitReject()
+                          } else {
+                            setIsRejecting(true)
+                          }
+                        } else {
+                          handleLessorAction(id, action)
+                        }
+                      }
+                    }}
+                  >
+                    Thử lại
+                  </button>
+
+                  <button
+                    className="admin-btn admin-btn--ghost"
+                    onClick={() => setActionError("")}
+                  >
+                    Đóng lỗi
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {isRejecting && (
+              <div style={{marginBottom:12}}>
+                <div style={{fontWeight:600, marginBottom:8}}>Lý do từ chối</div>
+                <textarea value={rejectReason} onChange={e => setRejectReason(e.target.value)} rows={3} style={{width:'100%', padding:8, borderRadius:6}} />
+                <div style={{display:'flex', gap:8, marginTop:8}}>
+                  <button className="admin-btn admin-btn--warning" onClick={() => submitReject()}>
+                    Xác nhận từ chối
+                  </button>
+                  <button className="admin-btn admin-btn--ghost" onClick={() => { setIsRejecting(false); setRejectReason(''); }}>
+                    Huỷ
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="modal-actions">
             {selectedRequest.status === "pending" && (
               <>              
@@ -657,7 +878,7 @@ export default function AdminDashboard() {
 
               <button
                 className="admin-btn admin-btn--warning"
-                onClick={() => handleLessorAction(selectedRequest.id, "reject")}
+                onClick={() => setIsRejecting(true)}
               >
                 Từ chối
               </button>

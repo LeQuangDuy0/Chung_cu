@@ -98,6 +98,13 @@ export default function BlogDetail() {
   if (loading) return <div style={{padding:50, textAlign:'center'}}>Đang tải nội dung...</div>
   if (error || !blog) return <div style={{padding:50, textAlign:'center', color:'red'}}>{error}</div>
 
+  const subtitle = blog.subtitle || blog.sub_title || blog.short_description || blog.excerpt || ''
+  const tags = Array.isArray(blog.tags)
+    ? blog.tags
+    : typeof blog.tags === 'string'
+    ? blog.tags.split(',').map(s => s.trim()).filter(Boolean)
+    : (blog.tag_list || [])
+
   const cover = resolveImage(blog.cover_image_url)
   const dateStr = blog.created_at ? new Date(blog.created_at).toLocaleDateString('vi-VN') : 'Mới cập nhật'
 
@@ -125,7 +132,7 @@ export default function BlogDetail() {
         /* LAYOUT 2 CỘT */
         .bd-layout {
           display: grid;
-          grid-template-columns: 2.3fr 1fr; /* Trái rộng - Phải hẹp */
+          grid-template-columns: 4.3fr 1fr; /* Trái rộng - Phải hẹp */
           gap: 20px;
           align-items: start;
         }
@@ -282,6 +289,20 @@ export default function BlogDetail() {
               <span>Đăng bởi: <strong>{blog.author_name || 'Admin'}</strong></span>
               <span>Ngày: {dateStr}</span>
             </div>
+
+            {/* Tiêu đề phụ / Trích dẫn ngắn */}
+            {subtitle && (
+              <p style={{marginTop:8, marginBottom:12, color:'#cfcfcf'}}>{subtitle}</p>
+            )}
+
+            {/* Tags */}
+            {tags.length > 0 && (
+              <div style={{marginBottom:12}}>
+                {tags.map((t, i) => (
+                  <span key={i} style={{display:'inline-block', padding:'6px 8px', background:'#222', color:'#fff', borderRadius:6, marginRight:8, fontSize:13}}>{t}</span>
+                ))}
+              </div>
+            )} 
             
             {/* Ảnh Cover (nếu muốn hiện đầu bài) */}
             {/* {cover && (

@@ -290,7 +290,7 @@ export default function Homes() {
                                     <span>{item.area} m²</span>
                                     <span>Full nội thất</span>
                                 </div>
-                                <Link to={`/posts/${item.id}`} className="btn-circle">
+                                <Link to={`/post/${item.id}`} className="btn-circle">
                                     <ArrowRight size={18}/>
                                 </Link>
                             </div>

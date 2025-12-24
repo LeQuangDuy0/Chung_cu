@@ -334,9 +334,9 @@ export default function AdminPostEdit() {
             </div>
 
             {/* Nội dung */}
-            <div className="admin-form__row">
+          
               <div className="admin-form__col">
-                <label className="admin-label">
+                <label className="admin-label" style={{width:"100%"}}>
                   Nội dung mô tả bài đăng
                   <textarea
                     className="admin-input"
@@ -348,7 +348,7 @@ export default function AdminPostEdit() {
                   ></textarea>
                 </label>
               </div>
-            </div>
+ 
 
             {/* Tiện ích + Môi trường xung quanh */}
             <div className="admin-form__row">

@@ -18,6 +18,12 @@ function resolveImage(src) {
    MAP API -> UI
 ======================= */
 function mapApiBlogToUi(b) {
+  const tags = Array.isArray(b.tags)
+    ? b.tags
+    : typeof b.tags === 'string'
+    ? b.tags.split(',').map(s => s.trim()).filter(Boolean)
+    : (b.tag_list || [])
+
   return {
     id: b.id,
     slug: b.slug || b.id,
@@ -27,8 +33,8 @@ function mapApiBlogToUi(b) {
     created_at: b.created_at || null,
     author: b.author_name || 'Apartments Team',
     read_time: b.read_time || '5 phút đọc',
-    excerpt: b.excerpt || '',
-    tags: b.tags || b.tag_list || [],
+    excerpt: b.excerpt || b.short_description || b.subtitle || b.sub_title || '',
+    tags,
   }
 }
 

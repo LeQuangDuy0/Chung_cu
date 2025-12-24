@@ -205,7 +205,7 @@ export default function NotificationsBell() {
                   <div style={{display:'flex',justifyContent:'space-between',gap:12, width:'100%'}}>
                     <div style={{flex:1}}>
                         <div style={{display:'flex',alignItems:'center',gap:8}}>
-                          <div className="notification-item__title">{n.title || n.body || (n.data && (n.data.title || n.data.message) ) || 'Thông báo'}</div>
+                         
                           <span className="notification-item__type">{TYPE_LABEL[n.type] || TYPE_LABEL.default}</span>
                         </div>
 

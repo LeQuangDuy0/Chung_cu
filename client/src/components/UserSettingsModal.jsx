@@ -43,12 +43,33 @@ const maxBirthDate = `${year}-${month}-${day}`
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
 
+  // Lessor cooldown (seconds) - không cho gửi yêu cầu tiếp trong 15 phút
+  const [lessorCooldown, setLessorCooldown] = useState(0)
+  const [lessorBlocked, setLessorBlocked] = useState(false)
+  const [lastLessorInfo, setLastLessorInfo] = useState(null)
+
   // Lock scroll
   useEffect(() => {
     const old = document.body.style.overflow
     document.body.style.overflow = "hidden"
     return () => { document.body.style.overflow = old }
   }, [])
+
+  // Countdown for lessor cooldown
+  useEffect(() => {
+    if (!lessorCooldown || lessorCooldown <= 0) return
+    const iv = setInterval(() => {
+      setLessorCooldown(s => {
+        if (s <= 1) {
+          setLessorBlocked(false)
+          clearInterval(iv)
+          return 0
+        }
+        return s - 1
+      })
+    }, 1000)
+    return () => clearInterval(iv)
+  }, [lessorCooldown])
 
   // Change basic input
   const handleChange = e => {
@@ -62,6 +83,62 @@ const maxBirthDate = `${year}-${month}-${day}`
     setAvatarFile(file)
     setAvatarPreview(URL.createObjectURL(file))
     setStage("avatar")
+  }
+
+  // Format thời gian mm:ss
+  const formatTime = (s) => {
+    const m = Math.floor(s / 60)
+    const sec = s % 60
+    return `${m} phút ${sec.toString().padStart(2, '0')} giây`
+  }
+
+  // Mở form yêu cầu Lessor - kiểm tra cooldown từ server
+  const handleOpenLessor = async () => {
+    setError("")
+    setSuccess("")
+
+    const token = localStorage.getItem("access_token")
+    if (!token) {
+      setStage("lessor")
+      setLessorBlocked(false)
+      return
+    }
+
+    try {
+      setLoading(true)
+      const res = await fetch(`${API_URL}/user/lessor-request-status`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      const data = await res.json().catch(() => null)
+
+      // Nếu không có yêu cầu trước -> hiển thị form
+      if (!res.ok || !data?.data) {
+        setLastLessorInfo(null)
+        setLessorBlocked(false)
+        setStage("lessor")
+        return
+      }
+
+      setLastLessorInfo(data.data)
+      const created = new Date(data.data.created_at).getTime()
+      const diffSec = Math.floor((Date.now() - created) / 1000)
+      const wait = 15 * 60
+      if (diffSec < wait) {
+        setLessorCooldown(wait - diffSec)
+        setLessorBlocked(true)
+        setStage("lessor")
+      } else {
+        setLessorBlocked(false)
+        setStage("lessor")
+      }
+
+    } catch (err) {
+      console.error('check lessor status failed', err)
+      setLessorBlocked(false)
+      setStage("lessor")
+    } finally {
+      setLoading(false)
+    }
   }
 
   // ===============================
@@ -137,17 +214,43 @@ const maxBirthDate = `${year}-${month}-${day}`
           throw new Error(first || data.message || 'Không thể gửi yêu cầu.')
         }
 
+        // If server returns rate limit info (retry_after), respect it and show blocked message
+        if (res.status === 429 && data?.data?.retry_after) {
+          setLessorCooldown(Number(data.data.retry_after) || 15 * 60)
+          setLessorBlocked(true)
+          setError(data.message || 'Bạn cần chờ trước khi gửi lại.')
+          return
+        }
+
         // fallback: include raw response text or status for debugging
         const fallback = data?.message || rawText || `Lỗi server (status ${res.status})`
         console.error('Lessor request failed', { status: res.status, rawText, data })
+
+        // Nếu server thực tế đã tạo yêu cầu (ví dụ khi backend trả lỗi sau commit), thử kiểm tra trạng thái yêu cầu
+        try {
+          const statusRes = await fetch(`${API_URL}/user/lessor-request-status`, { headers: { Authorization: `Bearer ${token}` } })
+          const statusJson = await statusRes.json().catch(() => null)
+          if (statusRes.ok && statusJson?.data) {
+            setSuccess('Gửi yêu cầu thành công (server trả lỗi nhưng yêu cầu đã được tạo).')
+            onClose()
+            setTimeout(() => window.location.reload(), 700)
+            return
+          }
+        } catch (e) {
+          // ignore
+        }
+
         throw new Error(fallback)
       }
 
+      // SUCCESS: đặt cooldown 15 phút
       setSuccess("Gửi yêu cầu thành công! Vui lòng chờ admin duyệt.")
+      setLessorCooldown(15 * 60)
+      setLessorBlocked(true)
+
       // close modal and refresh so status updates
       onClose();
-      window.location.reload();
-
+      setTimeout(() => window.location.reload(), 600)
     } catch (err) {
       setError(err.message || 'Có lỗi khi gửi yêu cầu.')
     } finally {
@@ -269,102 +372,115 @@ const maxBirthDate = `${year}-${month}-${day}`
   // ============================
   // RENDER FORM LESSOR
   // ============================
-  const renderLessorForm = () => (
-    <form className="settings-form" onSubmit={(e) => { 
-    e.preventDefault(); 
-    handleRequestLessor(); 
-  }}>
-    
-    <h2 className="settings-title">Yêu cầu quyền đăng bài</h2>
+  const renderLessorForm = () => {
+    if (lessorCooldown > 0 || lessorBlocked) {
+      return (
+        <div className="settings-form">
+          <h2 className="settings-title">Đã gửi yêu cầu</h2>
+          <p>Bạn đã gửi yêu cầu gần đây. Bạn có thể gửi lại sau <strong>{formatTime(lessorCooldown)}</strong>.</p>
+          <p style={{fontSize:13,color:'#ccc'}}>Thông tin lần gửi cuối: {lastLessorInfo ? (lastLessorInfo.created_at ? new Date(lastLessorInfo.created_at).toLocaleString('vi-VN') : '') : 'N/A'}</p>
+          <div className="settings-actions" style={{marginTop:20}}>
+            <button type="button" className="settings-btn settings-btn--ghost" onClick={() => setStage("main")}>Đóng</button>
+          </div>
+        </div>
+      )
+    }
 
-    {/* Họ tên */}
-    <label>Họ và tên *</label>
-    <input
-      value={lessorForm.full_name}
-      onChange={e => setLessorForm({ ...lessorForm, full_name: e.target.value })}
-      placeholder="Nhập họ và tên"
-    />
+    return (
+      <form className="settings-form" onSubmit={(e) => { 
+        e.preventDefault(); 
+        handleRequestLessor(); 
+      }}>
+        
+        <h2 className="settings-title">Yêu cầu quyền đăng bài</h2>
 
-    {/* Email */}
-    <label>Email *</label>
-    <input
-      value={lessorForm.email}
-      onChange={e => setLessorForm({ ...lessorForm, email: e.target.value })}
-      placeholder="Nhập email"
-    />
-
-    {/* 2 cột: SĐT + Ngày sinh */}
-    <div className="two-col">
-      <div>
-        <label>Số điện thoại *</label>
+        {/* Họ tên */}
+        <label>Họ và tên *</label>
         <input
-          value={lessorForm.phone_number}
-          onChange={e => setLessorForm({ ...lessorForm, phone_number: e.target.value })}
-          placeholder="VD: 0987654321"
+          value={lessorForm.full_name}
+          onChange={e => setLessorForm({ ...lessorForm, full_name: e.target.value })}
+          placeholder="Nhập họ và tên"
         />
-      </div>
 
-      <div>
-        <label>Ngày sinh *</label>
-      <input
-  type="date"
-  value={lessorForm.date_of_birth}
-  max={maxBirthDate}   // không được lớn hơn ngày hiện tại - 18 tuổi
-  min="1900-01-01"
-  onChange={e => setLessorForm({ ...lessorForm, date_of_birth: e.target.value })}
-/>
-
-      </div>
-    </div>
-
-    {/* Ảnh CCCD */}
-    <label>Ảnh CCCD *</label>
-
-    <div className="cccd-box-row">
-
-      {/* Mặt trước */}
-      <div className="cccd-box">
-        {cccdFront ? (
-          <img 
-            src={URL.createObjectURL(cccdFront)}
-            className="cccd-img"
-            onClick={() => setPreviewImage(URL.createObjectURL(cccdFront))}
-          />
-        ) : (
-          <div className="cccd-placeholder">Mặt trước</div>
-        )}
-
-        <input 
-          type="file" 
-          accept="image/*"
-          onChange={(e) => {
-            const f = e.target.files[0];
-            setCccdFront(f);
-          }}
+        {/* Email */}
+        <label>Email *</label>
+        <input
+          value={lessorForm.email}
+          onChange={e => setLessorForm({ ...lessorForm, email: e.target.value })}
+          placeholder="Nhập email"
         />
-      </div>
 
-      {/* Mặt sau */}
-      <div className="cccd-box">
-        {cccdBack ? (
-          <img 
-            src={URL.createObjectURL(cccdBack)}
-            className="cccd-img"
-            onClick={() => setPreviewImage(URL.createObjectURL(cccdBack))}
-          />
-        ) : (
-          <div className="cccd-placeholder">Mặt sau</div>
-        )}
+        {/* 2 cột: SĐT + Ngày sinh */}
+        <div className="two-col">
+          <div>
+            <label>Số điện thoại *</label>
+            <input
+              value={lessorForm.phone_number}
+              onChange={e => setLessorForm({ ...lessorForm, phone_number: e.target.value })}
+              placeholder="VD: 0987654321"
+            />
+          </div>
 
-        <input 
-          type="file" 
-          accept="image/*"
-          onChange={(e) => {
-            const f = e.target.files[0];
-            setCccdBack(f);
-          }}
-        />
-      </div>
+          <div>
+            <label>Ngày sinh *</label>
+          <input
+      type="date"
+      value={lessorForm.date_of_birth}
+      max={maxBirthDate}   // không được lớn hơn ngày hiện tại - 18 tuổi
+      min="1900-01-01"
+      onChange={e => setLessorForm({ ...lessorForm, date_of_birth: e.target.value })}
+    />
+
+          </div>
+        </div>
+
+        {/* Ảnh CCCD */}
+        <label>Ảnh CCCD *</label>
+
+        <div className="cccd-box-row">
+
+          {/* Mặt trước */}
+          <div className="cccd-box">
+            {cccdFront ? (
+              <img 
+                src={URL.createObjectURL(cccdFront)}
+                className="cccd-img"
+                onClick={() => setPreviewImage(URL.createObjectURL(cccdFront))}
+              />
+            ) : (
+              <div className="cccd-placeholder">Mặt trước</div>
+            )}
+
+            <input 
+              type="file" 
+              accept="image/*"
+              onChange={(e) => {
+                const f = e.target.files[0];
+                setCccdFront(f);
+              }}
+            />
+          </div>
+
+          {/* Mặt sau */}
+          <div className="cccd-box">
+            {cccdBack ? (
+              <img 
+                src={URL.createObjectURL(cccdBack)}
+                className="cccd-img"
+                onClick={() => setPreviewImage(URL.createObjectURL(cccdBack))}
+              />
+            ) : (
+              <div className="cccd-placeholder">Mặt sau</div>
+            )}
+
+            <input 
+              type="file" 
+              accept="image/*"
+              onChange={(e) => {
+                const f = e.target.files[0];
+                setCccdBack(f);
+              }}
+            />      </div>
 
     </div>
 
@@ -375,7 +491,7 @@ const maxBirthDate = `${year}-${month}-${day}`
       <button type="button" className="settings-btn settings-btn--ghost" onClick={() => setStage("main")}>
         Hủy
       </button>
-      <button type="submit" className="settings-btn settings-btn--primary">
+      <button type="submit" className="settings-btn settings-btn--primary" disabled={loading || lessorBlocked}>
         {loading ? "Đang gửi..." : "Gửi yêu cầu"}
       </button>
     </div>
@@ -388,6 +504,7 @@ const maxBirthDate = `${year}-${month}-${day}`
     )}
   </form>
   )
+  }
 
   // ============================
   // OTHER FORMS (INFO / PASS / AVATAR)
@@ -401,7 +518,10 @@ const maxBirthDate = `${year}-${month}-${day}`
         <button className="settings-main-btn" onClick={() => setStage("password")}>🔒 Đổi mật khẩu</button>
         <button className="settings-main-btn" onClick={() => setStage("avatar")}>🖼 Đổi ảnh đại diện</button>
         {user.role === "user" && (
-          <button className="settings-main-btn" onClick={() => setStage("lessor")}>⭐ Yêu cầu nâng cấp lên Lessor</button>
+          <button className="settings-main-btn" onClick={handleOpenLessor}>
+            ⭐ Yêu cầu nâng cấp lên Lessor
+            {lessorCooldown>0 && <div style={{fontSize:12, marginTop:6, color:'#cbd5e1'}}>Chờ {formatTime(lessorCooldown)}</div>}
+          </button>
         )}
       </div>
 

@@ -256,6 +256,7 @@ export default function DormsExplore() {
 
             const normalizedAmenities = rawAmenities.map(a => ({
               id: a.id,
+              k: a.slug || a.key || String(a.id),
               name:
                 a.name ||
                 a.label ||
@@ -273,6 +274,7 @@ export default function DormsExplore() {
 
             const normalizedEnv = rawEnv.map(e => ({
               id: e.id,
+              k: e.slug || e.key || String(e.id),
               name:
                 e.name ||
                 e.label ||
@@ -337,6 +339,17 @@ export default function DormsExplore() {
       data = data.filter(d => d.area >= mi && d.area <= ma)
     }
 
+    // Áp dụng bộ lọc tiện ích / môi trường: nếu có lựa chọn amen
+    if (amen.length) {
+      data = data.filter(d => {
+        const keys = [
+          ...(Array.isArray(d.amenities) ? d.amenities : []).map(x => x.k || x.name || String(x.id)),
+          ...(Array.isArray(d.env_features) ? d.env_features : []).map(x => x.k || x.name || String(x.id)),
+        ]
+        return amen.every(sel => keys.includes(sel))
+      })
+    }
+
     if (sort === 'price_asc') data.sort((a, b) => a.price - b.price)
     else if (sort === 'price_desc') data.sort((a, b) => b.price - a.price)
     else if (sort === 'area_desc') data.sort((a, b) => b.area - a.area)
@@ -362,7 +375,13 @@ export default function DormsExplore() {
   }, [appliedVersion, page, nav])
 
   const toggleAmen = k => {
-    setAmen(s => (s.includes(k) ? s.filter(x => x !== k) : [...s, k]))
+    setAmen(s => {
+      const next = s.includes(k) ? s.filter(x => x !== k) : [...s, k]
+      return next
+    })
+    // Auto-apply quick filter immediately
+    setPage(1)
+    setAppliedVersion(ver => ver + 1)
   }
 
   const chips = useMemo(() => {
@@ -444,7 +463,7 @@ export default function DormsExplore() {
         className="re-hero u-fullbleed"
         style={{
           backgroundImage:
-            'url("https://cdn.luxstay.com/rooms/26764/large/room_26764_94_1560498789.jpg")',
+            'url("https://noithatmanhhe.vn/wp-content/uploads/2023/10/giuong-tang-nguoi-lon-3.webp")',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',

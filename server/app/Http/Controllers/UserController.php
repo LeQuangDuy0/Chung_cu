@@ -9,6 +9,7 @@ use App\Services\CloudinaryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash; 
+use Carbon\Carbon;
 
 class UserController extends Controller
 {
@@ -256,6 +257,22 @@ public function requestLessor(Request $request)
         ], 422);
     }
 
+    // RATE LIMIT: KHÔNG CHO GỬI LIÊN TỤC — 15 PHÚT
+    $lastRequest = LessorRequest::where('user_id', $user->id)->latest()->first();
+    if ($lastRequest) {
+        $now = Carbon::now();
+        $diffSeconds = $now->diffInSeconds($lastRequest->created_at);
+        $waitSeconds = 15 * 60; // 15 phút
+        if ($diffSeconds < $waitSeconds) {
+            $remaining = $waitSeconds - $diffSeconds;
+            return response()->json([
+                'status' => false,
+                'message' => 'Bạn đã gửi yêu cầu gần đây. Vui lòng chờ ' . ceil($remaining / 60) . ' phút trước khi gửi lại.',
+                'data' => ['retry_after' => $remaining]
+            ], 429);
+        }
+    }
+
     // ============================
     //  VALIDATE FORM
     // ============================
@@ -439,13 +456,17 @@ public function requestLessor(Request $request)
         $user->save();
 
         // Thông báo cho user rằng yêu cầu đã được chấp nhận
-        Notification::create([
-            'user_id' => $user->id,
-            'type' => 'lessor_approved',
-            'content' => 'Yêu cầu đăng ký làm chủ trọ của bạn đã được chấp nhận.',
-            'is_read' => false,
-            'data' => ['lessor_request_id' => $lessorRequest->id],
-        ]);
+        try {
+            Notification::create([
+                'user_id' => $user->id,
+                'type' => 'lessor_approved',
+                'content' => 'Yêu cầu đăng ký làm chủ trọ của bạn đã được chấp nhận.',
+                'is_read' => false,
+                'data' => ['lessor_request_id' => $lessorRequest->id],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to create notification for lessor approve', ['err' => $e->getMessage(), 'request_id' => $lessorRequest->id]);
+        }
 
         return response()->json([
             'status' => true,
@@ -487,14 +508,19 @@ public function requestLessor(Request $request)
         $lessorRequest->rejection_reason = $request->reason;
         $lessorRequest->save();
 
+
         // Thông báo cho user rằng yêu cầu đã bị từ chối cùng lý do
-        Notification::create([
-            'user_id' => $lessorRequest->user_id,
-            'type' => 'lessor_rejected',
-            'content' => 'Yêu cầu đăng ký làm chủ trọ của bạn đã bị từ chối. Lý do: ' . $lessorRequest->rejection_reason,
-            'is_read' => false,
-            'data' => ['lessor_request_id' => $lessorRequest->id],
-        ]);
+        try {
+            Notification::create([
+                'user_id' => $lessorRequest->user_id,
+                'type' => 'lessor_rejected',
+                'content' => 'Yêu cầu đăng ký làm chủ trọ của bạn đã bị từ chối. Lý do: ' . $lessorRequest->rejection_reason,
+                'is_read' => false,
+                'data' => ['lessor_request_id' => $lessorRequest->id],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to create notification for lessor reject', ['err' => $e->getMessage(), 'request_id' => $lessorRequest->id]);
+        }
 
         return response()->json([
             'status' => true,
@@ -504,6 +530,44 @@ public function requestLessor(Request $request)
                 'status' => $lessorRequest->status,
                 'rejection_reason' => $lessorRequest->rejection_reason,
             ],
+        ]);
+    }
+
+    // DELETE /api/admin/lessor-requests/{id}
+    public function deleteLessorRequest($id)
+    {
+        $admin = Auth::user();
+
+        if (!$admin || $admin->role !== 'admin') {
+            return response()->json([
+                'status' => false,
+                'message' => 'Chỉ admin mới được xoá yêu cầu.',
+            ], 403);
+        }
+
+        $lessorRequest = \App\Models\LessorRequest::find($id);
+
+        if (!$lessorRequest) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Không tìm thấy yêu cầu.',
+            ], 404);
+        }
+
+        try {
+            $lessorRequest->delete();
+        } catch (\Exception $e) {
+            \Log::error('Failed to delete lessor request', ['err' => $e->getMessage(), 'request_id' => $id]);
+            return response()->json([
+                'status' => false,
+                'message' => 'Không thể xoá yêu cầu.',
+            ], 500);
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Yêu cầu đã được xoá.',
+            'data' => ['lessor_request_id' => $id],
         ]);
     }
 }

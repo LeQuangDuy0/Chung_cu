@@ -65,7 +65,7 @@ export default function PostsList() {
 
         return (
           <article key={post.id} className="post-card">
-            <Link to={`/posts/${post.id}`} className="post-card__thumb">
+            <Link to={`/post/${post.id}`} className="post-card__thumb">
               <img src={thumb} alt={post.title} />
             </Link>
 
@@ -74,7 +74,7 @@ export default function PostsList() {
                 {post.category?.name || 'Tin cho thuê'}
               </p>
               <h3 className="post-card__title">
-                <Link to={`/posts/${post.id}`}>{post.title}</Link>
+                <Link to={`/post/${post.id}`}>{post.title}</Link>
               </h3>
               <p className="post-card__price">{priceText}</p>
             </div>

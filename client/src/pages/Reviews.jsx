@@ -193,7 +193,7 @@ export default function Reviews() {
                 Cho bài đăng{' '}
                 <Link
                   className="rv-link"
-                  to={`/posts/${r.post_id}`}
+                  to={`/post/${r.post_id}`}
                 >
                   {r.post.title}
                 </Link>

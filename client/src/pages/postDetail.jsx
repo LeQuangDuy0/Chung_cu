@@ -858,7 +858,7 @@ export default function PostDetail() {
                   <span className="pd-rating__count">
                     ({ratingCount} đánh giá)
                   </span>
-                  <Link to={`/posts/${post.id}/reviews`} className="pd-link">
+                  <Link to={`/post/${post.id}#reviews`} className="pd-link">
                     Xem chi tiết đánh giá
                   </Link>
                 </>
